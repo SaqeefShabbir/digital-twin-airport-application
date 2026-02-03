@@ -56,9 +56,11 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
 	</dependencies>
-
-	"SCRAM-SHA-256$4096:94OTCqzNLWoMzn2+k0Yrhw==$fX60nDf4Aqa6uKChRiyauZeoLw2+a91ZhYIKp+u2s8Q=:3+YLxLWz4h3XMNWzGXEmK7a4hOuUPjpGLhj6OH8AYP8="
 
 	<build>
 		<plugins>

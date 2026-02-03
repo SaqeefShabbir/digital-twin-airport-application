@@ -1,0 +1,47 @@
+src/main/java/com/airport/digitaltwin/
+├── AirportDigitalTwinApplication.java
+├── config/
+│   ├── DatabaseConfig.java
+│   ├── KafkaConfig.java
+│   ├── RedisConfig.java
+│   ├── SecurityConfig.java
+│   ├── WebSocketConfig.java
+│   └── TimescaleDBConfig.java
+├── controller/
+│   ├── AirportController.java
+│   ├── FlightController.java
+│   ├── TerminalController.java
+│   ├── AnalyticsController.java
+│   └── DiagnosticsController.java
+├── service/
+│   ├── AirportService.java
+│   ├── FlightService.java
+│   ├── TerminalService.java
+│   ├── AnalyticsService.java
+│   ├── SimulationService.java
+│   ├── EventService.java
+│   ├── WeatherService.java
+│   └── KafkaProducerService.java
+├── repository/
+│   ├── AirportRepository.java
+│   ├── FlightRepository.java
+│   ├── TerminalRepository.java
+│   ├── RunwayRepository.java
+│   ├── GateRepository.java
+│   └── MetricsRepository.java
+├── model/
+│   ├── Airport.java
+│   ├── Terminal.java
+│   ├── Runway.java
+│   ├── Gate.java
+│   ├── Flight.java
+│   ├── Aircraft.java
+│   ├── Passenger.java
+│   ├── Baggage.java
+│   ├── WeatherData.java
+│   ├── Event.java
+│   ├── dto/
+│   └── enums/
+└── websocket/
+    ├── WebSocketHandler.java
+    └── WebSocketSessionManager.java
