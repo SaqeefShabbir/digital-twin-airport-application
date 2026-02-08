@@ -1,0 +1,297 @@
+<div class="gate-assignment-dialog">
+    <!-- Dialog Header -->
+    <div class="dialog-header" [style.background]="getStatusColor(data.gate.status)">
+      <div class="header-content">
+        <mat-icon class="header-icon">{{ getStatusIcon(data.gate.status) }}</mat-icon>
+        <div class="header-text">
+          <h2 mat-dialog-title>Gate {{ data.gate.gateNumber }} Assignment</h2>
+          <p class="header-subtitle">
+            Terminal {{ data.gate.terminal }} • {{ data.gate.status }}
+            <span *ngIf="data.gate.currentFlight" class="current-flight">
+              • Current: {{ data.gate.currentFlight }}
+            </span>
+          </p>
+        </div>
+      </div>
+      <button mat-icon-button class="close-button" (click)="close()" aria-label="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  
+    <!-- Dialog Content -->
+    <mat-dialog-content>
+      <form [formGroup]="assignmentForm" class="assignment-form">
+        <!-- Gate Status Section -->
+        <div class="form-section status-section">
+          <h3 class="section-title">
+            <mat-icon>settings</mat-icon>
+            Gate Configuration
+          </h3>
+          
+          <div class="status-grid">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Gate Status</mat-label>
+              <mat-select formControlName="gateStatus">
+                <mat-option *ngFor="let status of gateStatuses" [value]="status.value">
+                  <div class="status-option" [style.color]="status.color">
+                    <mat-icon>{{ status.icon }}</mat-icon>
+                    {{ status.label }}
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>swap_vert</mat-icon>
+            </mat-form-field>
+  
+            <div class="current-info" *ngIf="data.gate.currentFlight">
+              <div class="info-item">
+                <label>Current Flight:</label>
+                <span class="flight-number">{{ data.gate.currentFlight }}</span>
+              </div>
+              <div class="info-item" *ngIf="data.gate.nextFlight">
+                <label>Next Flight:</label>
+                <span>{{ data.gate.nextFlight }} at {{ data.gate.nextFlightTime | date:'HH:mm' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Flight Assignment Section (Conditional) -->
+        <div *ngIf="assignmentForm.get('gateStatus')?.value === 'Occupied'" class="form-section flight-section">
+          <h3 class="section-title">
+            <mat-icon>flight_takeoff</mat-icon>
+            Flight Assignment
+          </h3>
+          
+          <div class="flight-grid">
+            <div class="flight-selector">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Select Flight</mat-label>
+                <mat-select formControlName="flightNumber">
+                  <mat-option value="">-- Select Flight --</mat-option>
+                  <mat-option *ngFor="let flight of availableFlights" [value]="flight.flightNumber">
+                    {{ flight.flightNumber }} • {{ flight.airline }} • {{ flight.destination }}
+                  </mat-option>
+                </mat-select>
+                <mat-icon matSuffix>flight</mat-icon>
+              </mat-form-field>
+  
+              <div class="flight-actions">
+                <button mat-button color="warn" (click)="clearFlight()">
+                  <mat-icon>clear</mat-icon>
+                  Clear
+                </button>
+                <button mat-button color="primary" (click)="reassignToOtherGate()">
+                  <mat-icon>swap_horiz</mat-icon>
+                  Reassign
+                </button>
+              </div>
+            </div>
+  
+            <div class="flight-details" *ngIf="assignmentForm.get('flightNumber')?.value">
+              <div class="detail-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Airline</mat-label>
+                  <input matInput formControlName="airline">
+                  <mat-icon matSuffix>airline_seat_flat</mat-icon>
+                </mat-form-field>
+  
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Destination</mat-label>
+                  <input matInput formControlName="destination">
+                  <mat-icon matSuffix>place</mat-icon>
+                </mat-form-field>
+              </div>
+  
+              <div class="detail-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Scheduled Time</mat-label>
+                  <input matInput type="datetime-local" formControlName="scheduledTime">
+                  <mat-icon matSuffix>schedule</mat-icon>
+                </mat-form-field>
+  
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Estimated Time</mat-label>
+                  <input matInput type="datetime-local" formControlName="estimatedTime">
+                  <mat-icon matSuffix>update</mat-icon>
+                </mat-form-field>
+              </div>
+  
+              <div class="detail-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Flight Status</mat-label>
+                  <mat-select formControlName="flightStatus">
+                    <mat-option *ngFor="let status of flightStatuses" [value]="status.value">
+                      <span [style.color]="status.color">{{ status.label }}</span>
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>flight_takeoff</mat-icon>
+                </mat-form-field>
+  
+                <div class="delay-indicator" *ngIf="calculateDelay() !== 0">
+                  <mat-icon>schedule</mat-icon>
+                  <span [class.delayed]="calculateDelay() > 0">
+                    {{ calculateDelay() > 0 ? '+' : '' }}{{ calculateDelay() }} min
+                  </span>
+                </div>
+              </div>
+  
+              <!-- Next Flight Assignment -->
+              <div class="next-flight-section">
+                <mat-checkbox formControlName="assignToNext" color="primary">
+                  Assign Next Flight
+                </mat-checkbox>
+                
+                <div class="next-flight-details" *ngIf="assignmentForm.get('assignToNext')?.value">
+                  <div class="detail-row">
+                    <mat-form-field appearance="outline" class="half-width">
+                      <mat-label>Next Flight Number</mat-label>
+                      <input matInput formControlName="nextFlightNumber">
+                      <mat-icon matSuffix>flight</mat-icon>
+                    </mat-form-field>
+  
+                    <mat-form-field appearance="outline" class="half-width">
+                      <mat-label>Next Flight Time</mat-label>
+                      <input matInput type="datetime-local" formControlName="nextFlightTime">
+                      <mat-icon matSuffix>schedule</mat-icon>
+                    </mat-form-field>
+                  </div>
+                  
+                  <button mat-button color="accent" (click)="swapFlights()" class="swap-button">
+                    <mat-icon>swap_horiz</mat-icon>
+                    Swap Current & Next Flights
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Maintenance Section (Conditional) -->
+        <div *ngIf="assignmentForm.get('gateStatus')?.value === 'Maintenance'" class="form-section maintenance-section">
+          <h3 class="section-title">
+            <mat-icon>build</mat-icon>
+            Maintenance Details
+          </h3>
+          
+          <div class="maintenance-grid">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Maintenance Reason</mat-label>
+              <mat-select formControlName="maintenanceReason">
+                <mat-option value="">-- Select Reason --</mat-option>
+                <mat-option *ngFor="let reason of maintenanceReasons" [value]="reason">
+                  {{ reason }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>warning</mat-icon>
+            </mat-form-field>
+  
+            <div class="duration-control">
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Duration (minutes)</mat-label>
+                <input matInput type="number" formControlName="maintenanceDuration" min="15" max="10080">
+                <mat-icon matSuffix>timer</mat-icon>
+                <mat-hint>{{ getFlightDuration() }}</mat-hint>
+              </mat-form-field>
+  
+              <div class="duration-presets">
+                <button mat-button (click)="assignmentForm.get('maintenanceDuration')?.setValue(30)">30m</button>
+                <button mat-button (click)="assignmentForm.get('maintenanceDuration')?.setValue(60)">1h</button>
+                <button mat-button (click)="assignmentForm.get('maintenanceDuration')?.setValue(240)">4h</button>
+                <button mat-button (click)="assignmentForm.get('maintenanceDuration')?.setValue(480)">8h</button>
+              </div>
+            </div>
+  
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Maintenance Notes</mat-label>
+              <textarea matInput formControlName="maintenanceNotes" rows="3" 
+                       placeholder="Additional details about the maintenance..."></textarea>
+              <mat-icon matSuffix>notes</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+  
+        <!-- Notes Section -->
+        <div class="form-section notes-section">
+          <h3 class="section-title">
+            <mat-icon>notes</mat-icon>
+            Additional Notes
+          </h3>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Assignment Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" 
+                     placeholder="Any additional notes or instructions..."></textarea>
+            <mat-icon matSuffix>description</mat-icon>
+          </mat-form-field>
+        </div>
+  
+        <!-- Preview Section -->
+        <div class="form-section preview-section">
+          <h3 class="section-title">
+            <mat-icon>preview</mat-icon>
+            Assignment Preview
+          </h3>
+          
+          <div class="preview-card" [style.borderLeftColor]="getStatusColor(assignmentForm.get('gateStatus')?.value)">
+            <div class="preview-header">
+              <div class="gate-preview">
+                <mat-icon>gate</mat-icon>
+                <div>
+                  <div class="gate-number">{{ data.gate.gateNumber }}</div>
+                  <div class="gate-terminal">{{ data.gate.terminal }}</div>
+                </div>
+              </div>
+              <div class="status-preview" [style.color]="getStatusColor(assignmentForm.get('gateStatus')?.value)">
+                {{ assignmentForm.get('gateStatus')?.value }}
+              </div>
+            </div>
+            
+            <div class="preview-content" *ngIf="assignmentForm.get('gateStatus')?.value === 'Occupied' && assignmentForm.get('flightNumber')?.value">
+              <div class="flight-preview">
+                <div class="flight-number">{{ assignmentForm.get('flightNumber')?.value }}</div>
+                <div class="flight-details">
+                  <span>{{ assignmentForm.get('airline')?.value }}</span>
+                  •
+                  <span>{{ assignmentForm.get('destination')?.value }}</span>
+                  •
+                  <span [style.color]="getFlightStatusColor(assignmentForm.get('flightStatus')?.value)">
+                    {{ assignmentForm.get('flightStatus')?.value }}
+                  </span>
+                </div>
+                <div class="flight-time">
+                  {{ assignmentForm.get('estimatedTime')?.value | date:'HH:mm' }}
+                  <span *ngIf="calculateDelay() > 0" class="delay-text">
+                    (+{{ calculateDelay() }}m)
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="preview-content" *ngIf="assignmentForm.get('gateStatus')?.value === 'Maintenance' && assignmentForm.get('maintenanceReason')?.value">
+              <div class="maintenance-preview">
+                <mat-icon>build</mat-icon>
+                <div>
+                  <div class="maintenance-reason">{{ assignmentForm.get('maintenanceReason')?.value }}</div>
+                  <div class="maintenance-duration">{{ getFlightDuration() }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </mat-dialog-content>
+  
+    <!-- Dialog Actions -->
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button (click)="close()">Cancel</button>
+      <button mat-raised-button color="primary" 
+              (click)="saveAssignment()" 
+              [disabled]="!assignmentForm.valid || isLoading">
+        <mat-icon *ngIf="isLoading">
+          <mat-spinner diameter="20"></mat-spinner>
+        </mat-icon>
+        <span *ngIf="!isLoading">Save Assignment</span>
+        <span *ngIf="isLoading">Saving...</span>
+      </button>
+    </mat-dialog-actions>
+  </div>

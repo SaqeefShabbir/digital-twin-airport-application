@@ -1,0 +1,779 @@
+<div class="resource-management-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">
+        <h2>
+          <mat-icon class="header-icon">precision_manufacturing</mat-icon>
+          Resource Management
+        </h2>
+        <div class="header-subtitle">
+          Monitor and manage airport resources, allocations, and maintenance
+        </div>
+      </div>
+      
+      <div class="header-controls">
+        <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
+          <mat-icon>refresh</mat-icon>
+          {{ isLoading ? 'Loading...' : 'Refresh' }}
+        </button>
+        
+        <button mat-button (click)="toggleAutoRefresh()" [color]="autoRefresh ? 'accent' : ''">
+          <mat-icon>{{ autoRefresh ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+          Auto-refresh
+        </button>
+        
+        <button mat-button (click)="toggleFilters()">
+          <mat-icon>{{ showFilters ? 'filter_alt' : 'filter_alt_off' }}</mat-icon>
+          Filters
+        </button>
+        
+        <button mat-button (click)="exportReport()">
+          <mat-icon>download</mat-icon>
+          Export Report
+        </button>
+      </div>
+    </div>
+  
+    <!-- Statistics Overview -->
+    <div class="stats-overview">
+      <div class="stat-card" (click)="setViewMode('INVENTORY')">
+        <div class="stat-icon-container" style="background: rgba(33, 150, 243, 0.1);">
+          <mat-icon class="stat-icon" style="color: #2196F3;">inventory</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.totalResources }}</div>
+          <div class="stat-label">Total Resources</div>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-up">{{ stats.availableResources }} available</span>
+        </div>
+      </div>
+      
+      <div class="stat-card" (click)="setViewMode('INVENTORY')">
+        <div class="stat-icon-container" style="background: rgba(76, 175, 80, 0.1);">
+          <mat-icon class="stat-icon" style="color: #4CAF50;">check_circle</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.availableResources }}</div>
+          <div class="stat-label">Available</div>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-up">{{ ((stats.availableResources / stats.totalResources) * 100) | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+      
+      <div class="stat-card" (click)="setViewMode('INVENTORY')">
+        <div class="stat-icon-container" style="background: rgba(255, 152, 0, 0.1);">
+          <mat-icon class="stat-icon" style="color: #FF9800;">build_circle</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.inUseResources }}</div>
+          <div class="stat-label">In Use</div>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-up">{{ stats.overallUtilization | number:'1.0-0' }}% utilization</span>
+        </div>
+      </div>
+      
+      <div class="stat-card" (click)="setViewMode('MAINTENANCE')">
+        <div class="stat-icon-container" style="background: rgba(244, 67, 54, 0.1);">
+          <mat-icon class="stat-icon" style="color: #F44336;">engineering</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.maintenanceResources }}</div>
+          <div class="stat-label">Under Maintenance</div>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-down">{{ maintenanceSchedules.length }} scheduled</span>
+        </div>
+      </div>
+      
+      <div class="stat-card" (click)="setViewMode('STAFF')">
+        <div class="stat-icon-container" style="background: rgba(156, 39, 176, 0.1);">
+          <mat-icon class="stat-icon" style="color: #9C27B0;">people</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.totalStaff }}</div>
+          <div class="stat-label">Staff</div>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-up">{{ stats.availableStaff }} available</span>
+        </div>
+      </div>
+      
+      <div class="stat-card" (click)="setViewMode('EQUIPMENT')">
+        <div class="stat-icon-container" style="background: rgba(0, 150, 136, 0.1);">
+          <mat-icon class="stat-icon" style="color: #009688;">construction</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.totalEquipment }}</div>
+          <div class="stat-label">Equipment</div>
+        </div>
+        <div class="stat-trend">
+          <span class="trend-up">{{ stats.availableEquipment }} operational</span>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Filters Panel -->
+    <div class="filters-panel" *ngIf="showFilters">
+      <div class="filters-row">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Resource Type</mat-label>
+          <mat-select [(value)]="selectedResourceType" (selectionChange)="applyFilters()">
+            <mat-option value="ALL">All Types</mat-option>
+            <mat-option *ngFor="let type of resourceTypes" [value]="type.value">
+              <mat-icon>{{ type.icon }}</mat-icon>
+              {{ type.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [(value)]="selectedStatus" (selectionChange)="applyFilters()">
+            <mat-option value="ALL">All Status</mat-option>
+            <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+              <span class="status-indicator" [style.background-color]="status.color"></span>
+              {{ status.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Terminal</mat-label>
+          <mat-select [(value)]="selectedTerminal" (selectionChange)="applyFilters()">
+            <mat-option *ngFor="let terminal of terminals" [value]="terminal">
+              {{ terminal === 'ALL' ? 'All Terminals' : 'Terminal ' + terminal }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Category</mat-label>
+          <mat-select [(value)]="selectedCategory" (selectionChange)="applyFilters()">
+            <mat-option value="ALL">All Categories</mat-option>
+            <mat-option *ngFor="let category of categories" [value]="category">
+              {{ category.replace('_', ' ') }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+  
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search Resources</mat-label>
+          <input matInput 
+                 [ngModel]="searchQuery"
+                 (ngModelChange)="onSearchChange($event)"
+                 placeholder="Search by name, ID, or location...">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+  
+    <!-- View Mode Toggle -->
+    <div class="view-mode-toggle">
+      <div class="toggle-buttons">
+        <button mat-button 
+                [class.active]="viewMode === 'DASHBOARD'" 
+                (click)="setViewMode('DASHBOARD')">
+          <mat-icon>dashboard</mat-icon>
+          Dashboard
+        </button>
+        <button mat-button 
+                [class.active]="viewMode === 'INVENTORY'" 
+                (click)="setViewMode('INVENTORY')">
+          <mat-icon>inventory</mat-icon>
+          Resource Inventory
+        </button>
+        <button mat-button 
+                [class.active]="viewMode === 'ALLOCATIONS'" 
+                (click)="setViewMode('ALLOCATIONS')">
+          <mat-icon>schedule</mat-icon>
+          Allocations
+        </button>
+        <button mat-button 
+                [class.active]="viewMode === 'MAINTENANCE'" 
+                (click)="setViewMode('MAINTENANCE')">
+          <mat-icon>engineering</mat-icon>
+          Maintenance
+        </button>
+        <button mat-button 
+                [class.active]="viewMode === 'STAFF'" 
+                (click)="setViewMode('STAFF')">
+          <mat-icon>people</mat-icon>
+          Staff
+        </button>
+        <button mat-button 
+                [class.active]="viewMode === 'EQUIPMENT'" 
+                (click)="setViewMode('EQUIPMENT')">
+          <mat-icon>construction</mat-icon>
+          Equipment
+        </button>
+      </div>
+    </div>
+  
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Dashboard View -->
+      <div class="dashboard-view" *ngIf="viewMode === 'DASHBOARD'">
+        <div class="dashboard-row">
+          <!-- Resource Chart -->
+          <div class="dashboard-card large-card">
+            <div class="card-header">
+              <h3>Resource Utilization</h3>
+              <span class="card-subtitle">By resource type</span>
+            </div>
+            <div class="card-content">
+              <canvas #resourceChart class="resource-chart"></canvas>
+            </div>
+          </div>
+  
+          <!-- Resource Status -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Resource Status Distribution</h3>
+              <span class="card-subtitle">Current status overview</span>
+            </div>
+            <div class="card-content">
+              <div class="status-distribution">
+                <div *ngFor="let status of statusOptions" class="status-item">
+                  <div class="status-info">
+                    <span class="status-indicator" [style.background-color]="status.color"></span>
+                    <span class="status-label">{{ status.label }}</span>
+                  </div>
+                  <div class="status-count">
+                    {{ resources.filter(r => r.status === status.value).length }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <div class="dashboard-row">
+          <!-- Upcoming Maintenance -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Upcoming Maintenance</h3>
+              <span class="card-subtitle">Next 7 days</span>
+            </div>
+            <div class="card-content">
+              <div class="maintenance-list">
+                <div *ngFor="let maintenance of maintenanceSchedules.slice(0, 5)" 
+                     class="maintenance-item"
+                     [class]="maintenance.status.toLowerCase()">
+                  <div class="maintenance-info">
+                    <div class="resource-name">{{ maintenance.resourceName }}</div>
+                    <div class="maintenance-details">
+                      <span class="maintenance-type">{{ maintenance.type }}</span>
+                      <span class="maintenance-date">{{ maintenance.scheduledDate | date:'MMM d' }}</span>
+                    </div>
+                  </div>
+                  <div class="maintenance-status">
+                    <span class="status-badge">{{ maintenance.status }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Recent Allocations -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Recent Allocations</h3>
+              <span class="card-subtitle">Active allocations</span>
+            </div>
+            <div class="card-content">
+              <div class="allocations-list">
+                <div *ngFor="let allocation of allocations.filter(a => a.status === 'ACTIVE').slice(0, 5)" 
+                     class="allocation-item">
+                  <div class="allocation-info">
+                    <div class="resource-id">{{ allocation.resourceId }}</div>
+                    <div class="allocation-details">
+                      <span *ngIf="allocation.flightNumber" class="flight-number">
+                        {{ allocation.flightNumber }}
+                      </span>
+                      <span *ngIf="allocation.task" class="task">{{ allocation.task }}</span>
+                    </div>
+                  </div>
+                  <div class="allocation-time">
+                    {{ allocation.startTime | date:'HH:mm' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Staff Availability -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Staff Availability</h3>
+              <span class="card-subtitle">By department</span>
+            </div>
+            <div class="card-content">
+              <div class="staff-availability">
+                <div *ngFor="let dept of ['Ground Operations', 'Maintenance', 'Security', 'Administration']" 
+                     class="department-item">
+                  <div class="department-name">{{ dept }}</div>
+                  <div class="department-stats">
+                    <span class="available-count">
+                      {{ staffResources.filter(s => s.department === dept && s.status === 'AVAILABLE').length }}
+                    </span>
+                    <span class="total-count">
+                      / {{ staffResources.filter(s => s.department === dept).length }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Resource Inventory View -->
+      <div class="inventory-view" *ngIf="viewMode === 'INVENTORY'">
+        <div class="view-header">
+          <h2>Resource Inventory</h2>
+          <div class="view-info">
+            Showing {{ resources.length }} resources
+          </div>
+        </div>
+        
+        <div class="inventory-content">
+          <div class="resources-grid">
+            <div *ngFor="let resource of resources" 
+                 class="resource-card"
+                 [class.selected]="selectedResource?.id === resource.id"
+                 (click)="selectResource(resource)">
+              <div class="resource-header">
+                <div class="resource-type-icon">
+                  <mat-icon>{{ getResourceTypeIcon(resource.type) }}</mat-icon>
+                </div>
+                <div class="resource-info">
+                  <div class="resource-name">{{ resource.name }}</div>
+                  <div class="resource-id">{{ resource.id }}</div>
+                </div>
+                <div class="resource-status">
+                  <span class="status-badge" [style.background-color]="getStatusColor(resource.status)">
+                    {{ resource.status.replace('_', ' ') }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="resource-details">
+                <div class="detail-row">
+                  <mat-icon class="detail-icon">location_on</mat-icon>
+                  <span class="detail-value">{{ resource.location || 'Not specified' }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="resource.terminal">
+                  <mat-icon class="detail-icon">apartment</mat-icon>
+                  <span class="detail-value">Terminal {{ resource.terminal }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="resource.assignedTo">
+                  <mat-icon class="detail-icon">flight</mat-icon>
+                  <span class="detail-value">{{ resource.assignedTo }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="resource.capacity">
+                  <mat-icon class="detail-icon">people</mat-icon>
+                  <span class="detail-value">Capacity: {{ resource.capacity }}</span>
+                </div>
+              </div>
+              
+              <div class="resource-actions">
+                <button mat-icon-button 
+                        *ngIf="resource.status === 'AVAILABLE'"
+                        (click)="allocateResource(resource.id, {flightNumber: 'FL1234', task: 'Gate Assignment'})"
+                        matTooltip="Allocate Resource">
+                  <mat-icon>assignment</mat-icon>
+                </button>
+                <button mat-icon-button 
+                        *ngIf="resource.status === 'IN_USE'"
+                        (click)="releaseResource(resource.id)"
+                        matTooltip="Release Resource">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+                <button mat-icon-button 
+                        (click)="scheduleMaintenance(resource.id, {description: 'Routine maintenance'})"
+                        matTooltip="Schedule Maintenance">
+                  <mat-icon>engineering</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Allocations View -->
+      <div class="allocations-view" *ngIf="viewMode === 'ALLOCATIONS'">
+        <div class="view-header">
+          <h2>Resource Allocations</h2>
+          <div class="view-controls">
+            <mat-form-field appearance="outline" class="time-range-field">
+              <mat-label>Time Range</mat-label>
+              <mat-select [(value)]="timeRange" (selectionChange)="updateTimeline()">
+                <mat-option value="TODAY">Today</mat-option>
+                <mat-option value="WEEK">This Week</mat-option>
+                <mat-option value="MONTH">This Month</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+        
+        <div class="allocations-content">
+          <div class="timeline-container">
+            <canvas #timelineCanvas class="timeline-canvas"></canvas>
+          </div>
+          
+          <div class="allocations-list">
+            <div class="allocations-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Resource</th>
+                    <th>Flight/Task</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let allocation of allocations">
+                    <td class="resource-cell">
+                      {{ resources.find(r => r.id === allocation.resourceId)?.name || allocation.resourceId }}
+                    </td>
+                    <td>
+                      <span *ngIf="allocation.flightNumber" class="flight-number">{{ allocation.flightNumber }}</span>
+                      <span *ngIf="allocation.task" class="task">{{ allocation.task }}</span>
+                    </td>
+                    <td>{{ allocation.startTime | date:'MMM d, HH:mm' }}</td>
+                    <td>{{ allocation.endTime ? (allocation.endTime | date:'MMM d, HH:mm') : 'N/A' }}</td>
+                    <td>
+                      <span class="status-badge" [class]="getStatusClass(allocation.status)">
+                        {{ allocation.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="priority-badge" [class]="'priority-' + allocation.priority.toLowerCase()">
+                        {{ allocation.priority }}
+                      </span>
+                    </td>
+                    <td class="actions-cell">
+                      <button mat-icon-button *ngIf="allocation.status === 'ACTIVE'" (click)="releaseResource(allocation.resourceId)">
+                        <mat-icon>stop_circle</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Maintenance View -->
+      <div class="maintenance-view" *ngIf="viewMode === 'MAINTENANCE'">
+        <div class="view-header">
+          <h2>Maintenance Schedule</h2>
+          <div class="view-info">
+            {{ maintenanceSchedules.length }} scheduled maintenance tasks
+          </div>
+        </div>
+        
+        <div class="maintenance-content">
+          <div class="maintenance-grid">
+            <div *ngFor="let maintenance of maintenanceSchedules" 
+                 class="maintenance-card"
+                 [class]="maintenance.status.toLowerCase()">
+              <div class="maintenance-header">
+                <div class="maintenance-type">{{ maintenance.type }}</div>
+                <div class="maintenance-status">
+                  <span class="status-badge">{{ maintenance.status }}</span>
+                </div>
+              </div>
+              
+              <div class="maintenance-body">
+                <div class="resource-info">
+                  <div class="resource-name">{{ maintenance.resourceName }}</div>
+                  <div class="resource-id">{{ maintenance.resourceId }}</div>
+                </div>
+                
+                <div class="schedule-info">
+                  <div class="schedule-date">
+                    <mat-icon>date_range</mat-icon>
+                    {{ maintenance.scheduledDate | date:'MMM d, yyyy' }}
+                  </div>
+                  <div class="schedule-duration">
+                    <mat-icon>schedule</mat-icon>
+                    {{ maintenance.estimatedDuration }} hours
+                  </div>
+                </div>
+                
+                <div class="assigned-team" *ngIf="maintenance.assignedTeam">
+                  <mat-icon>groups</mat-icon>
+                  {{ maintenance.assignedTeam }}
+                </div>
+                
+                <div class="description" *ngIf="maintenance.description">
+                  {{ maintenance.description }}
+                </div>
+              </div>
+              
+              <div class="maintenance-actions">
+                <button mat-button *ngIf="maintenance.status === 'SCHEDULED'">
+                  <mat-icon>play_circle</mat-icon>
+                  Start
+                </button>
+                <button mat-button *ngIf="maintenance.status === 'IN_PROGRESS'">
+                  <mat-icon>check_circle</mat-icon>
+                  Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Staff View -->
+      <div class="staff-view" *ngIf="viewMode === 'STAFF'">
+        <div class="view-header">
+          <h2>Staff Resources</h2>
+          <div class="view-info">
+            {{ stats.totalStaff }} staff members
+          </div>
+        </div>
+        
+        <div class="staff-content">
+          <div class="staff-grid">
+            <div *ngFor="let staff of staffResources" 
+                 class="staff-card"
+                 [class.selected]="selectedStaff?.id === staff.id"
+                 (click)="selectStaff(staff)">
+              <div class="staff-header">
+                <div class="staff-avatar">
+                  <mat-icon>person</mat-icon>
+                </div>
+                <div class="staff-info">
+                  <div class="staff-name">{{ staff.name }}</div>
+                  <div class="staff-role">{{ staff.role.replace('_', ' ') }}</div>
+                </div>
+                <div class="staff-status">
+                  <span class="status-badge" [class]="getStaffStatusClass(staff.status)">
+                    {{ staff.status.replace('_', ' ') }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="staff-details">
+                <div class="detail-row">
+                  <mat-icon class="detail-icon">business</mat-icon>
+                  <span class="detail-value">{{ staff.department }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="staff.location">
+                  <mat-icon class="detail-icon">location_on</mat-icon>
+                  <span class="detail-value">{{ staff.location }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="staff.currentTask">
+                  <mat-icon class="detail-icon">assignment</mat-icon>
+                  <span class="detail-value">{{ staff.currentTask }}</span>
+                </div>
+                
+                <div class="detail-row">
+                  <mat-icon class="detail-icon">star</mat-icon>
+                  <span class="detail-value">{{ staff.experienceLevel }}</span>
+                </div>
+              </div>
+              
+              <div class="staff-skills">
+                <div class="skills-label">Skills:</div>
+                <div class="skills-list">
+                  <span *ngFor="let skill of staff.skills.slice(0, 3)" class="skill-tag">
+                    {{ skill }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Equipment View -->
+      <div class="equipment-view" *ngIf="viewMode === 'EQUIPMENT'">
+        <div class="view-header">
+          <h2>Equipment Inventory</h2>
+          <div class="view-info">
+            {{ stats.totalEquipment }} equipment items
+          </div>
+        </div>
+        
+        <div class="equipment-content">
+          <div class="equipment-grid">
+            <div *ngFor="let equipment of equipmentResources" 
+                 class="equipment-card"
+                 [class.selected]="selectedEquipment?.id === equipment.id"
+                 (click)="selectEquipment(equipment)">
+              <div class="equipment-header">
+                <div class="equipment-type-icon">
+                  <mat-icon>construction</mat-icon>
+                </div>
+                <div class="equipment-info">
+                  <div class="equipment-name">{{ equipment.name }}</div>
+                  <div class="equipment-type">{{ equipment.type.replace('_', ' ') }}</div>
+                </div>
+                <div class="equipment-status">
+                  <span class="status-badge" [class]="getEquipmentStatusClass(equipment.status)">
+                    {{ equipment.status.replace('_', ' ') }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="equipment-details">
+                <div class="detail-row" *ngIf="equipment.location">
+                  <mat-icon class="detail-icon">location_on</mat-icon>
+                  <span class="detail-value">{{ equipment.location }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="equipment.fuelLevel !== undefined">
+                  <mat-icon class="detail-icon">local_gas_station</mat-icon>
+                  <span class="detail-value">Fuel: {{ equipment.fuelLevel }}%</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="equipment.lastService">
+                  <mat-icon class="detail-icon">build</mat-icon>
+                  <span class="detail-value">Last serviced: {{ equipment.lastService | date:'MMM d' }}</span>
+                </div>
+                
+                <div class="detail-row" *ngIf="equipment.assignedTo">
+                  <mat-icon class="detail-icon">flight</mat-icon>
+                  <span class="detail-value">{{ equipment.assignedTo }}</span>
+                </div>
+              </div>
+              
+              <div class="equipment-actions">
+                <button mat-icon-button *ngIf="equipment.status === 'OPERATIONAL'">
+                  <mat-icon>assignment</mat-icon>
+                </button>
+                <button mat-icon-button *ngIf="equipment.status === 'IN_USE'">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+                <button mat-icon-button>
+                  <mat-icon>engineering</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Selection Details Panel -->
+      <div class="details-panel" *ngIf="selectedResource || selectedStaff || selectedEquipment">
+        <div class="details-header">
+          <h3>Details</h3>
+          <button mat-icon-button (click)="clearSelection()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        
+        <div class="details-content">
+          <ng-container *ngIf="selectedResource">
+            <div class="detail-section">
+              <h4>{{ selectedResource.name }}</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Type:</span>
+                  <span class="detail-value">{{ selectedResource.type }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status:</span>
+                  <span class="detail-value status-badge" 
+                        [style.background-color]="getStatusColor(selectedResource.status)">
+                    {{ selectedResource.status }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Location:</span>
+                  <span class="detail-value">{{ selectedResource.location }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Assigned To:</span>
+                  <span class="detail-value">{{ selectedResource.assignedTo || 'Not assigned' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Last Updated:</span>
+                  <span class="detail-value">{{ selectedResource.lastUpdated | date:'medium' }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          
+          <ng-container *ngIf="selectedStaff">
+            <div class="detail-section">
+              <h4>{{ selectedStaff.name }}</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Role:</span>
+                  <span class="detail-value">{{ selectedStaff.role }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status:</span>
+                  <span class="detail-value">{{ selectedStaff.status }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Department:</span>
+                  <span class="detail-value">{{ selectedStaff.department }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Experience:</span>
+                  <span class="detail-value">{{ selectedStaff.experienceLevel }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Current Task:</span>
+                  <span class="detail-value">{{ selectedStaff.currentTask || 'None' }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          
+          <ng-container *ngIf="selectedEquipment">
+            <div class="detail-section">
+              <h4>{{ selectedEquipment.name }}</h4>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Type:</span>
+                  <span class="detail-value">{{ selectedEquipment.type }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status:</span>
+                  <span class="detail-value">{{ selectedEquipment.status }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Location:</span>
+                  <span class="detail-value">{{ selectedEquipment.location }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Assigned To:</span>
+                  <span class="detail-value">{{ selectedEquipment.assignedTo || 'Not assigned' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Last Service:</span>
+                  <span class="detail-value">{{ selectedEquipment.lastService | date:'medium' }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" *ngIf="isLoading">
+      <mat-spinner diameter="50"></mat-spinner>
+      <div>Loading resource data...</div>
+    </div>
+  </div>

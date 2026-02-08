@@ -1,0 +1,912 @@
+@use '@angular/material' as mat;
+
+.airport-dashboard {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0c2461 0%, #1e3799 50%, #4a69bd 100%);
+  color: #ffffff;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: #0c2461;
+  }
+
+  &.loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  &.compact-layout {
+    .left-panel {
+      flex: 1;
+    }
+    .right-panel {
+      flex: 2;
+    }
+  }
+
+  &.expanded-layout {
+    .left-panel {
+      display: none;
+    }
+    .right-panel {
+      flex: 1;
+    }
+  }
+}
+
+// Loading Overlay
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+
+  .loading-content {
+    text-align: center;
+    max-width: 400px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    ::ng-deep .mat-mdc-progress-spinner {
+      margin: 0 auto 20px;
+
+      circle {
+        stroke: #3498db;
+      }
+    }
+
+    p {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .loading-subtext {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+  }
+}
+
+// Header
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .logo-icon {
+        font-size: 36px;
+        width: 36px;
+        height: 36px;
+        color: #3498db;
+      }
+
+      .logo-text {
+        h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 300;
+          line-height: 1.2;
+        }
+
+        .airport-subtitle {
+          margin: 4px 0 0;
+          font-size: 14px;
+          opacity: 0.8;
+        }
+      }
+    }
+
+    .simulation-info {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14px;
+
+      .simulation-time {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .simulation-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .status-indicator {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #95a5a6;
+          transition: background-color 0.3s;
+
+          &.active {
+            background: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+          }
+        }
+      }
+    }
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-end;
+
+    .control-panel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .speed-control {
+        display: flex;
+        gap: 4px;
+        margin-right: 16px;
+
+        button {
+          min-width: 40px;
+          font-size: 12px;
+          border-radius: 4px;
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.7);
+
+          &.active {
+            background: #3498db;
+            color: white;
+          }
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.2);
+          }
+        }
+      }
+
+      button {
+        mat-icon {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+
+    .last-update {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+  }
+}
+
+// Alert Banner
+.alert-banner {
+  background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+  padding: 12px 24px;
+  animation: slideDown 0.3s ease;
+
+  &.critical {
+    background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+    animation: pulse 2s infinite;
+  }
+
+  .alert-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .alert-icon {
+      animation: pulse 2s infinite;
+    }
+
+    .alert-text {
+      flex: 1;
+
+      .critical-text {
+        color: #ffdddd;
+        font-weight: 500;
+      }
+    }
+
+    button {
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+// Weather Overview
+.weather-overview {
+  padding: 16px 24px 0;
+
+  .weather-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+
+    ::ng-deep .mat-mdc-card-header {
+      padding: 16px 16px 8px;
+
+      .mat-mdc-card-header-text {
+        width: 100%;
+      }
+
+      .mat-mdc-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 500;
+      }
+    }
+
+    ::ng-deep .mat-mdc-card-content {
+      padding: 8px 16px 16px;
+    }
+
+    .weather-details {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+
+      .weather-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .weather-icon {
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          color: #f39c12;
+        }
+
+        .weather-temp {
+          font-size: 36px;
+          font-weight: 300;
+        }
+      }
+
+      .weather-info {
+        flex: 1;
+
+        .weather-condition {
+          font-size: 18px;
+          font-weight: 500;
+          margin-bottom: 12px;
+        }
+
+        .weather-stats {
+          display: flex;
+          gap: 24px;
+
+          .weather-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+
+            mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+              opacity: 0.8;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Main Content
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 16px 24px;
+  gap: 24px;
+  min-height: 0;
+}
+
+// Left Panel
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 320px;
+  max-width: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+}
+
+// Quick Stats
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 16px 8px;
+
+      .stat-icon {
+        color: #3498db;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+    }
+
+    .stat-content {
+      padding: 0 16px 16px;
+
+      .stat-value {
+        font-size: 32px;
+        font-weight: 300;
+        line-height: 1;
+        margin-bottom: 8px;
+      }
+
+      .stat-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 12px;
+
+        .stat-detail {
+          padding: 2px 8px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+
+          &.active {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+          }
+
+          &.delayed {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Terminal Status Card
+.terminal-status-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+
+  ::ng-deep .mat-mdc-card-header {
+    padding: 16px 16px 8px;
+
+    .mat-mdc-card-title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .mat-mdc-card-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+    }
+  }
+
+  ::ng-deep .mat-mdc-card-content {
+    padding: 8px 16px 16px;
+  }
+
+  .terminal-grid {
+    display: grid;
+    gap: 12px;
+
+    .terminal-item {
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border-left: 4px solid #3498db;
+
+      &.crowdedness-low {
+        border-left-color: #2ecc71;
+      }
+
+      &.crowdedness-medium {
+        border-left-color: #f39c12;
+      }
+
+      &.crowdedness-high {
+        border-left-color: #e74c3c;
+      }
+
+      &.crowdedness-critical {
+        border-left-color: #c0392b;
+      }
+
+      .terminal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+
+        h4 {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .crowdedness-badge {
+          padding: 2px 8px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+          font-size: 11px;
+          font-weight: 500;
+        }
+      }
+
+      .terminal-metrics {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 12px;
+
+        .terminal-metric {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            opacity: 0.8;
+          }
+        }
+      }
+
+      .terminal-progress {
+        ::ng-deep .mat-mdc-progress-bar {
+          height: 4px;
+          border-radius: 2px;
+
+          .mdc-linear-progress__bar-inner {
+            border-top-width: 4px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Recent Flights Card
+.recent-flights-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+
+  ::ng-deep .mat-mdc-card-header {
+    padding: 16px 16px 8px;
+
+    .mat-mdc-card-title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .mat-mdc-card-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+    }
+  }
+
+  ::ng-deep .mat-mdc-card-content {
+    padding: 8px 16px 16px;
+    max-height: 300px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+    }
+  }
+
+  .flights-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .flight-item {
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .flight-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .flight-number {
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .flight-airline {
+          font-size: 12px;
+          opacity: 0.8;
+        }
+
+        .flight-status {
+          font-size: 11px;
+          font-weight: 500;
+          padding: 2px 6px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+      }
+
+      .flight-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        opacity: 0.8;
+
+        span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          mat-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Right Panel
+.right-panel {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .main-tabs {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    ::ng-deep {
+      .mat-mdc-tab-header {
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .mat-mdc-tab-labels {
+        padding: 0 8px;
+      }
+
+      .mat-mdc-tab {
+        min-width: 120px;
+        opacity: 1;
+        color: rgba(255, 255, 255, 0.7);
+        transition: all 0.2s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        &.mdc-tab--active {
+          color: white;
+
+          .mdc-tab__text-label {
+            color: white;
+          }
+        }
+
+        .mdc-tab__text-label {
+          font-size: 13px;
+          font-weight: 500;
+        }
+      }
+
+      .mat-mdc-tab-body-wrapper {
+        flex: 1;
+      }
+
+      .mat-mdc-tab-body {
+        padding: 16px;
+        overflow: hidden;
+      }
+
+      .mat-mdc-tab-body-content {
+        overflow: hidden;
+      }
+    }
+
+    .tab-content {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+}
+
+// Footer
+.dashboard-footer {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 24px;
+
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    opacity: 0.8;
+
+    .performance-metrics {
+      display: flex;
+      gap: 24px;
+      flex: 1;
+      max-width: 400px;
+
+      .performance-metric {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        span {
+          white-space: nowrap;
+        }
+
+        ::ng-deep .mat-mdc-progress-bar {
+          height: 4px;
+          border-radius: 2px;
+
+          .mdc-linear-progress__bar-inner {
+            border-top-width: 4px;
+          }
+        }
+      }
+    }
+
+    .system-info {
+      display: flex;
+      gap: 24px;
+
+      span {
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1400px) {
+  .dashboard-content {
+    flex-direction: column;
+  }
+
+  .left-panel {
+    max-width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    .quick-stats {
+      order: 1;
+      flex: 1;
+      min-width: 100%;
+    }
+
+    .terminal-status-card {
+      order: 2;
+      flex: 1;
+    }
+
+    .recent-flights-card {
+      order: 3;
+      flex: 1;
+    }
+  }
+
+  .right-panel {
+    flex: 1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-header {
+    flex-direction: column;
+    gap: 16px;
+
+    .header-left {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .header-right {
+      align-items: stretch;
+      width: 100%;
+    }
+  }
+
+  .weather-overview .weather-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .control-panel {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    gap: 12px;
+
+    .performance-metrics,
+    .system-info {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+// Print Styles
+@media print {
+  .airport-dashboard {
+    background: white;
+    color: black;
+    height: auto;
+
+    .dashboard-header,
+    .alert-banner,
+    .weather-overview,
+    .dashboard-footer {
+      display: none;
+    }
+
+    .dashboard-content {
+      flex-direction: column;
+      padding: 0;
+    }
+
+    .left-panel,
+    .right-panel {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+}

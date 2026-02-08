@@ -1,0 +1,954 @@
+@use '@angular/material' as mat;
+
+.gate-management-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0c2461;
+  color: white;
+  overflow: hidden;
+}
+
+// Header Styles
+.gate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  .header-left {
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      font-size: 24px;
+      font-weight: 300;
+
+      mat-icon {
+        color: #3498db;
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    .header-subtitle {
+      margin: 4px 0 0;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .view-controls {
+      display: flex;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 4px;
+
+      button {
+        min-width: 40px;
+        border-radius: 16px;
+        color: rgba(255, 255, 255, 0.7);
+
+        &.active {
+          background: #3498db;
+          color: white;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+
+    button[mat-raised-button] {
+      mat-icon {
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+// Statistics Section
+.statistics-section {
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+
+  .statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+
+      .stat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        opacity: 0.8;
+      }
+
+      .stat-details {
+        flex: 1;
+
+        .stat-value {
+          font-size: 24px;
+          font-weight: 500;
+          line-height: 1;
+          margin-bottom: 4px;
+        }
+
+        .stat-label {
+          font-size: 12px;
+          opacity: 0.7;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      }
+
+      ::ng-deep .mat-mdc-progress-bar {
+        height: 6px;
+        border-radius: 3px;
+        margin-top: 8px;
+
+        .mdc-linear-progress__bar-inner {
+          border-top-width: 6px;
+        }
+      }
+    }
+
+    &.occupancy-card {
+      .stat-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        .stat-details {
+          width: 100%;
+          text-align: center;
+        }
+      }
+    }
+  }
+}
+
+// Control Panel
+.control-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  .control-left {
+    flex: 1;
+
+    .quick-filters {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+
+      .filter-field {
+        width: 180px;
+
+        @media (max-width: 1200px) {
+          width: 160px;
+        }
+
+        @media (max-width: 768px) {
+          width: 100%;
+        }
+      }
+
+      button {
+        mat-icon {
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+
+  .control-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-end;
+
+    .bulk-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: rgba(52, 152, 219, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(52, 152, 219, 0.3);
+
+      .selection-count {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      button {
+        mat-icon {
+          margin-right: 4px;
+        }
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+
+      button {
+        color: rgba(255, 255, 255, 0.7);
+
+        &.active {
+          color: #3498db;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+  }
+}
+
+// Main Content Area
+.gate-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px 24px;
+  gap: 16px;
+}
+
+// Table View
+.table-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .loading-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+
+    p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.8;
+    }
+  }
+
+  .table-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+// Table Styles
+.gate-table {
+  width: 100%;
+  background: transparent;
+
+  ::ng-deep {
+    .mat-mdc-header-row {
+      background: rgba(0, 0, 0, 0.3);
+      height: 56px;
+    }
+
+    .mat-mdc-row {
+      height: 60px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      &.selected {
+        background: rgba(52, 152, 219, 0.1);
+      }
+    }
+
+    .mat-mdc-cell, .mat-mdc-header-cell {
+      color: rgba(255, 255, 255, 0.9);
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .mat-mdc-header-cell {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .mat-sort-header-arrow {
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+// Cell Styles
+.gate-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .gate-icon {
+    color: #3498db;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .gate-info {
+    .gate-number {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .gate-id {
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+  }
+}
+
+.terminal-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+  }
+}
+
+.status-cell {
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+.flight-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .flight-icon {
+    color: #f39c12;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .flight-info {
+    .flight-number {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .flight-status,
+    .flight-time {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+  }
+}
+
+.no-flight,
+.no-time {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.action-buttons-cell {
+  display: flex;
+  gap: 4px;
+
+  button {
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// No Data Message
+.no-data-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  text-align: center;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.3;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    opacity: 0.7;
+  }
+
+  button {
+    margin-top: 8px;
+  }
+}
+
+// Grid View
+.grid-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .grid-container {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+  }
+
+  .gate-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s;
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    &.selected {
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      color: white;
+      position: relative;
+
+      .gate-number {
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .gate-terminal {
+        font-size: 14px;
+        opacity: 0.9;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2px 8px;
+        border-radius: 10px;
+      }
+
+      .selection-checkbox {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+
+        ::ng-deep {
+          .mdc-checkbox__background {
+            border-color: white;
+          }
+
+          .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+            border-color: white;
+            background-color: white;
+          }
+        }
+      }
+    }
+
+    .card-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .gate-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .flight-info {
+        .current-flight,
+        .next-flight {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          mat-icon {
+            color: #f39c12;
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+          }
+
+          .flight-details {
+            .flight-number {
+              font-weight: 600;
+              font-size: 14px;
+            }
+
+            .flight-label {
+              font-size: 12px;
+              opacity: 0.7;
+              margin-top: 2px;
+            }
+          }
+        }
+      }
+
+      .no-flight-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.5);
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+          opacity: 0.5;
+        }
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 4px;
+      padding: 8px 16px 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+      button {
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+}
+
+// Visual View
+.visual-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .visual-container {
+    flex: 1;
+    display: flex;
+    gap: 24px;
+    overflow: hidden;
+
+    @media (max-width: 1200px) {
+      flex-direction: column;
+    }
+  }
+
+  .terminal-visualization {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    .terminal-section {
+      .terminal-title {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 500;
+        color: #3498db;
+        padding-left: 8px;
+      }
+
+      .gates-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    }
+  }
+
+  .visual-gate {
+    width: 100px;
+    height: 80px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    &.selected {
+      box-shadow: 0 0 0 2px #3498db, 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .visual-gate-number {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .visual-gate-status {
+      font-size: 12px;
+      opacity: 0.9;
+      text-transform: uppercase;
+    }
+
+    .visual-gate-flight {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-top: 4px;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .visual-selection {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+
+      ::ng-deep {
+        .mdc-checkbox {
+          width: 20px;
+          height: 20px;
+        }
+
+        .mdc-checkbox__background {
+          border-color: white;
+        }
+
+        .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+          border-color: white;
+          background-color: white;
+        }
+      }
+    }
+  }
+
+  .visual-legend {
+    flex: 1;
+    min-width: 200px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    h4 {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #3498db;
+    }
+
+    .legend-items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .legend-color {
+          width: 16px;
+          height: 16px;
+          border-radius: 4px;
+        }
+
+        span {
+          font-size: 13px;
+          opacity: 0.9;
+        }
+      }
+    }
+  }
+}
+
+// Footer Actions
+.footer-actions {
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .selected-count {
+      font-size: 14px;
+      font-weight: 500;
+      color: #3498db;
+    }
+
+    .footer-buttons {
+      display: flex;
+      gap: 12px;
+
+      button {
+        mat-icon {
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+}
+
+// Material Overrides
+::ng-deep {
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    .mat-mdc-form-field-outline {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .mat-mdc-form-field-label {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .mat-mdc-input-element {
+      color: white;
+    }
+
+    .mat-mdc-select-value {
+      color: white;
+    }
+
+    .mat-mdc-select-arrow {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  .mat-mdc-paginator {
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    .mat-mdc-paginator-page-size-label,
+    .mat-mdc-paginator-range-label,
+    .mat-mdc-select-value,
+    .mat-mdc-select-arrow {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  .mat-mdc-option {
+    background: #0c2461 !important;
+    color: white !important;
+
+    &:hover {
+      background: rgba(52, 152, 219, 0.2) !important;
+    }
+
+    &.mdc-list-item--selected {
+      background: rgba(52, 152, 219, 0.3) !important;
+    }
+  }
+
+  .mat-mdc-select-panel {
+    background: #0c2461 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px !important;
+  }
+}
+
+// Status Options
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Responsive Design
+@media (max-width: 1200px) {
+  .control-panel {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+
+    .control-left,
+    .control-right {
+      width: 100%;
+    }
+
+    .control-right {
+      align-items: stretch;
+
+      .bulk-actions {
+        justify-content: space-between;
+      }
+
+      .action-buttons {
+        justify-content: flex-end;
+      }
+    }
+  }
+
+  .statistics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .gate-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .quick-filters {
+    flex-direction: column;
+    align-items: stretch !important;
+
+    .filter-field,
+    button {
+      width: 100% !important;
+    }
+  }
+
+  .grid-container {
+    grid-template-columns: 1fr !important;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+
+    .footer-buttons {
+      justify-content: flex-end;
+    }
+  }
+}

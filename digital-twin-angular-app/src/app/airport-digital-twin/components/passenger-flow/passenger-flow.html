@@ -1,0 +1,475 @@
+<div class="passenger-flow-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">
+      <h2>
+        <mat-icon class="header-icon">people</mat-icon>
+        Passenger Flow Analytics
+      </h2>
+      <div class="header-subtitle">
+        Real-time passenger movement and congestion monitoring
+      </div>
+    </div>
+    
+    <div class="header-controls">
+      <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon>
+        {{ isLoading ? 'Refreshing...' : 'Refresh Data' }}
+      </button>
+      
+      <button mat-button (click)="toggleAutoRefresh()" [color]="autoRefresh ? 'accent' : ''">
+        <mat-icon>{{ autoRefresh ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+        Auto-refresh
+      </button>
+      
+      <button mat-button (click)="toggleHeatmap()">
+        <mat-icon>{{ showHeatmap ? 'heat_pump' : 'heat_pump_off' }}</mat-icon>
+        Heatmap
+      </button>
+      
+      <button mat-button (click)="toggleAlerts()">
+        <mat-icon>{{ showAlerts ? 'notifications_active' : 'notifications_off' }}</mat-icon>
+        Alerts
+      </button>
+      
+      <button mat-button (click)="exportData()">
+        <mat-icon>download</mat-icon>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="stats-overview">
+    <div class="stat-card">
+      <div class="stat-icon-container">
+        <mat-icon class="stat-icon">people</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.totalPassengers | number }}</div>
+        <div class="stat-label">Total Passengers</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-container">
+        <mat-icon class="stat-icon">schedule</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.averageWaitTime | number:'1.0-0' }}<span class="stat-unit">min</span></div>
+        <div class="stat-label">Avg Wait Time</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-container">
+        <mat-icon class="stat-icon">trending_up</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.capacityUtilization | number:'1.0-0' }}<span class="stat-unit">%</span></div>
+        <div class="stat-label">Capacity Utilization</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-container">
+        <mat-icon class="stat-icon">warning</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.alertsCount }}</div>
+        <div class="stat-label">Active Alerts</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-container">
+        <mat-icon class="stat-icon">show_chart</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.peakHourPassengers | number }}</div>
+        <div class="stat-label">Peak Hour Volume</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-container">
+        <mat-icon class="stat-icon">timer</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.maxWaitTime }}<span class="stat-unit">min</span></div>
+        <div class="stat-label">Max Wait Time</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Controls -->
+  <div class="filters-section">
+    <div class="filters-row">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Time Range</mat-label>
+        <mat-select [(value)]="selectedTimeRange" (selectionChange)="onTimeRangeChange()">
+          <mat-option *ngFor="let range of timeRanges" [value]="range.value">
+            {{ range.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Terminal</mat-label>
+        <mat-select [(value)]="selectedTerminal" (selectionChange)="onTerminalSelect($event.value)">
+          <mat-option value="ALL">All Terminals</mat-option>
+          <mat-option *ngFor="let terminal of terminals" [value]="terminal">
+            Terminal {{ terminal }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Area</mat-label>
+        <mat-select [(value)]="selectedArea" (selectionChange)="onAreaSelect($event.value)">
+          <mat-option value="ALL">All Areas</mat-option>
+          <mat-option *ngFor="let area of areas" [value]="area">
+            {{ getAreaDisplayName(area) }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search Areas</mat-label>
+        <input matInput 
+               [ngModel]="searchTerm"
+               (ngModelChange)="onSearchChange($event)"
+               placeholder="Search by area name...">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <div class="view-toggle">
+      <button mat-button [class.active]="viewMode === 'OVERVIEW'" (click)="setViewMode('OVERVIEW')">
+        <mat-icon>dashboard</mat-icon>
+        Overview
+      </button>
+      <button mat-button [class.active]="viewMode === 'TERMINAL_DETAIL'" (click)="setViewMode('TERMINAL_DETAIL')">
+        <mat-icon>apartment</mat-icon>
+        Terminal Details
+      </button>
+      <button mat-button [class.active]="viewMode === 'AREA_ANALYTICS'" (click)="setViewMode('AREA_ANALYTICS')">
+        <mat-icon>analytics</mat-icon>
+        Area Analytics
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <!-- Heatmap Section -->
+    <div class="heatmap-section" *ngIf="showHeatmap && viewMode === 'OVERVIEW'">
+      <div class="section-header">
+        <h3>Passenger Density Heatmap</h3>
+        <div class="section-info">
+          Updated: {{ flowData?.timestamp | date:'mediumTime' }}
+        </div>
+      </div>
+      <div class="heatmap-container">
+        <canvas #heatmapCanvas class="heatmap-canvas"></canvas>
+        <div class="heatmap-overlay" *ngIf="isChartLoading">
+          <mat-spinner diameter="40"></mat-spinner>
+          <div>Updating heatmap...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overview View -->
+    <div class="overview-view" *ngIf="viewMode === 'OVERVIEW'">
+      <div class="content-row">
+        <!-- Terminals Overview -->
+        <div class="card terminals-card">
+          <div class="card-header">
+            <h3>Terminal Capacity</h3>
+            <span class="card-subtitle">Passenger distribution across terminals</span>
+          </div>
+          <div class="card-content">
+            <div class="terminals-list">
+              <div *ngFor="let terminal of flowData?.byTerminal" 
+                   class="terminal-item"
+                   (click)="showTerminalDetail(terminal.terminal)">
+                <div class="terminal-info">
+                  <div class="terminal-name">Terminal {{ terminal.terminal }}</div>
+                  <div class="terminal-stats">
+                    {{ terminal.passengerCount | number }} / {{ terminal.capacity | number }}
+                    <span class="utilization-badge" [class]="getUtilizationClass(terminal.utilization)">
+                      {{ terminal.utilization | number:'1.0-0' }}%
+                    </span>
+                  </div>
+                </div>
+                <div class="terminal-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" 
+                         [style.width.%]="terminal.utilization"
+                         [class]="getUtilizationClass(terminal.utilization)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Area Wait Times -->
+        <div class="card wait-times-card">
+          <div class="card-header">
+            <h3>Area Wait Times</h3>
+            <span class="card-subtitle">Average waiting times by area</span>
+          </div>
+          <div class="card-content">
+            <div class="wait-times-list">
+              <div *ngFor="let area of flowData?.byArea" 
+                   class="wait-time-item"
+                   (click)="showAreaDetail(area.area)">
+                <div class="wait-time-info">
+                  <div class="area-name">{{ getAreaDisplayName(area.area) }}</div>
+                  <div class="wait-time-stats">
+                    <span class="wait-time" [class]="getWaitTimeClass(area.averageWaitTime)">
+                      {{ area.averageWaitTime }} min
+                    </span>
+                    <span class="queue-length">
+                      {{ area.queueLength }} in queue
+                    </span>
+                  </div>
+                </div>
+                <div class="capacity-info">
+                  <div class="capacity-text">
+                    {{ area.passengerCount | number }}/{{ area.capacity | number }}
+                  </div>
+                  <div class="capacity-bar">
+                    <div class="capacity-fill" 
+                         [style.width.%]="(area.passengerCount / area.capacity) * 100"
+                         [class]="getUtilizationClass((area.passengerCount / area.capacity) * 100)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts Section -->
+      <div class="alerts-section" *ngIf="showAlerts && flowData?.alerts?.length">
+        <div class="card alerts-card">
+          <div class="card-header">
+            <h3>
+              <mat-icon class="alert-icon">warning</mat-icon>
+              Active Alerts
+              <span class="alert-count">{{ flowData.alerts.length }}</span>
+            </h3>
+          </div>
+          <div class="card-content">
+            <div class="alerts-list">
+              <div *ngFor="let alert of flowData.alerts" 
+                   class="alert-item"
+                   [class]="getAlertSeverityClass(alert.severity)"
+                   *ngIf="!alert.resolved">
+                <div class="alert-content">
+                  <div class="alert-header">
+                    <span class="alert-type">{{ getAlertTypeDisplay(alert.type) }}</span>
+                    <span class="alert-severity">{{ alert.severity }}</span>
+                  </div>
+                  <div class="alert-message">{{ alert.message }}</div>
+                  <div class="alert-details">
+                    <span class="alert-area">{{ getAreaDisplayName(alert.area) }}</span>
+                    <span class="alert-time">{{ alert.timestamp | date:'shortTime' }}</span>
+                  </div>
+                </div>
+                <div class="alert-actions">
+                  <button mat-icon-button (click)="acknowledgeAlert(alert.id)" matTooltip="Acknowledge Alert">
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal Detail View -->
+    <div class="terminal-detail-view" *ngIf="viewMode === 'TERMINAL_DETAIL' && selectedTerminalDetail">
+      <div class="detail-header">
+        <button mat-icon-button (click)="navigateBack()">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Terminal {{ selectedTerminalDetail }} - Passenger Flow</h2>
+      </div>
+      
+      <div class="terminal-detail-content">
+        <div class="terminal-metrics">
+          <div *ngIf="terminalFlows.find(t => t.terminal === selectedTerminalDetail)" class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <mat-icon>check_in</mat-icon>
+                Check-in
+              </div>
+              <div class="metric-value">
+                {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.queues }} queues
+              </div>
+              <div class="metric-subvalue">
+                Avg wait: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.averageWait }} min
+              </div>
+              <div class="metric-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.utilization"></div>
+                </div>
+                <span class="progress-text">
+                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.utilization | number:'1.0-0' }}%
+                </span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <mat-icon>security</mat-icon>
+                Security
+              </div>
+              <div class="metric-value">
+                {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.queues }} checkpoints
+              </div>
+              <div class="metric-subvalue">
+                Avg wait: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.averageWait }} min
+              </div>
+              <div class="metric-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.utilization"></div>
+                </div>
+                <span class="progress-text">
+                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.utilization | number:'1.0-0' }}%
+                </span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <mat-icon>passport</mat-icon>
+                Immigration
+              </div>
+              <div class="metric-value">
+                {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.queues }} counters
+              </div>
+              <div class="metric-subvalue">
+                Avg wait: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.averageWait }} min
+              </div>
+              <div class="metric-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.utilization"></div>
+                </div>
+                <span class="progress-text">
+                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.utilization | number:'1.0-0' }}%
+                </span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <mat-icon>luggage</mat-icon>
+                Baggage Claim
+              </div>
+              <div class="metric-value">
+                Wait time: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.baggage.waitTime }} min
+              </div>
+              <div class="metric-subvalue">
+                Belt utilization
+              </div>
+              <div class="metric-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.baggage.utilization"></div>
+                </div>
+                <span class="progress-text">
+                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.baggage.utilization | number:'1.0-0' }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-chart">
+          <div class="chart-container">
+            <canvas #flowChart class="flow-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Area Analytics View -->
+    <div class="area-analytics-view" *ngIf="viewMode === 'AREA_ANALYTICS' && selectedAreaDetail">
+      <div class="detail-header">
+        <button mat-icon-button (click)="navigateBack()">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>{{ getAreaDisplayName(selectedAreaDetail) }} - Analytics</h2>
+      </div>
+      
+      <div class="area-analytics-content">
+        <div class="area-stats">
+          <div *ngIf="flowData?.byArea.find(a => a.area === selectedAreaDetail)" class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">Current Passengers</div>
+              <div class="stat-value">
+                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.passengerCount | number }}
+              </div>
+            </div>
+            
+            <div class="stat-box">
+              <div class="stat-label">Capacity</div>
+              <div class="stat-value">
+                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.capacity | number }}
+              </div>
+            </div>
+            
+            <div class="stat-box">
+              <div class="stat-label">Queue Length</div>
+              <div class="stat-value">
+                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.queueLength | number }}
+              </div>
+            </div>
+            
+            <div class="stat-box">
+              <div class="stat-label">Avg Wait Time</div>
+              <div class="stat-value wait-time" 
+                   [class]="getWaitTimeClass(flowData?.byArea.find(a => a.area === selectedAreaDetail)?.averageWaitTime || 0)">
+                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.averageWaitTime }} min
+              </div>
+            </div>
+            
+            <div class="stat-box">
+              <div class="stat-label">Utilization</div>
+              <div class="stat-value utilization" 
+                   [class]="getUtilizationClass((flowData?.byArea.find(a => a.area === selectedAreaDetail)?.passengerCount || 0) / 
+                                                (flowData?.byArea.find(a => a.area === selectedAreaDetail)?.capacity || 1) * 100)">
+                {{ ((flowData?.byArea.find(a => a.area === selectedAreaDetail)?.passengerCount || 0) / 
+                    (flowData?.byArea.find(a => a.area === selectedAreaDetail)?.capacity || 1) * 100) | number:'1.0-0' }}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="area-trend">
+          <div class="trend-chart-container">
+            <!-- Trend chart would go here -->
+            <div class="trend-placeholder">
+              <mat-icon class="trend-icon">show_chart</mat-icon>
+              <div>Hourly Trend Analysis</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <div>Loading passenger flow data...</div>
+  </div>
+</div>

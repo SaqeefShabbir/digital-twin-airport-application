@@ -1,0 +1,721 @@
+<div class="weather-integration-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">
+        <h2>
+          <mat-icon class="header-icon">cloud</mat-icon>
+          Weather Integration
+        </h2>
+        <div class="header-subtitle">
+          Real-time weather monitoring and impact analysis for airport operations
+        </div>
+      </div>
+      
+      <div class="header-controls">
+        <button mat-raised-button color="primary" (click)="refreshData()" [disabled]="isLoading">
+          <mat-icon>refresh</mat-icon>
+          {{ isLoading ? 'Updating...' : 'Update' }}
+        </button>
+        
+        <button mat-button (click)="toggleAutoRefresh()" [color]="autoRefresh ? 'accent' : ''">
+          <mat-icon>{{ autoRefresh ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+          Auto-refresh
+        </button>
+        
+        <button mat-button (click)="toggleMetrics()">
+          <mat-icon>{{ showMetrics ? 'monitoring' : 'monitoring_off' }}</mat-icon>
+          Metrics
+        </button>
+        
+        <button mat-button (click)="toggleMap()">
+          <mat-icon>{{ showMap ? 'map' : 'map_off' }}</mat-icon>
+          Map
+        </button>
+        
+        <button mat-button (click)="exportReport()">
+          <mat-icon>download</mat-icon>
+          Export Report
+        </button>
+      </div>
+    </div>
+  
+    <!-- Unit Selector -->
+    <div class="unit-selector">
+      <div class="unit-buttons">
+        <button mat-button [class.active]="temperatureUnit === 'C'" (click)="changeUnits('temperature', 'C')">
+          °C
+        </button>
+        <button mat-button [class.active]="temperatureUnit === 'F'" (click)="changeUnits('temperature', 'F')">
+          °F
+        </button>
+        <span class="unit-separator">|</span>
+        <button mat-button [class.active]="windSpeedUnit === 'KPH'" (click)="changeUnits('wind', 'KPH')">
+          km/h
+        </button>
+        <button mat-button [class.active]="windSpeedUnit === 'MPH'" (click)="changeUnits('wind', 'MPH')">
+          mph
+        </button>
+        <button mat-button [class.active]="windSpeedUnit === 'KNOTS'" (click)="changeUnits('wind', 'KNOTS')">
+          kt
+        </button>
+        <span class="unit-separator">|</span>
+        <button mat-button [class.active]="visibilityUnit === 'KM'" (click)="changeUnits('visibility', 'KM')">
+          km
+        </button>
+        <button mat-button [class.active]="visibilityUnit === 'MI'" (click)="changeUnits('visibility', 'MI')">
+          mi
+        </button>
+      </div>
+    </div>
+  
+    <!-- Current Weather Overview -->
+    <div class="current-weather" *ngIf="weatherData && showMetrics">
+      <div class="current-card primary">
+        <div class="current-header">
+          <div class="location-info">
+            <h3>{{ weatherData.location }}</h3>
+            <div class="location-details">
+              <mat-icon>location_on</mat-icon>
+              {{ weatherData.coordinates.latitude.toFixed(4) }}° N, 
+              {{ weatherData.coordinates.longitude.toFixed(4) }}° W
+            </div>
+          </div>
+          <div class="time-info">
+            <div class="update-time">
+              Updated: {{ weatherData.timestamp | date:'MMM d, HH:mm:ss' }}
+            </div>
+            <div class="sun-times" *ngIf="weatherData.current.sunrise && weatherData.current.sunset">
+              <span>Sunrise: {{ weatherData.current.sunrise | date:'HH:mm' }}</span>
+              <span>Sunset: {{ weatherData.current.sunset | date:'HH:mm' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="current-body">
+          <div class="condition-display">
+            <div class="condition-icon">
+              <mat-icon class="condition-symbol">{{ getConditionIcon(weatherData.current.condition) }}</mat-icon>
+              <div class="condition-text">{{ weatherData.current.condition.replace('_', ' ') }}</div>
+            </div>
+            
+            <div class="temperature-display">
+              <div class="current-temp">
+                {{ convertTemperature(weatherData.current.temperature) | number:'1.0-0' }}°
+                <span class="temp-unit">{{ temperatureUnit }}</span>
+              </div>
+              <div class="feels-like">
+                Feels like {{ convertTemperature(weatherData.current.feelsLike) | number:'1.0-0' }}°
+              </div>
+            </div>
+            
+            <div class="weather-stats">
+              <div class="stat-item">
+                <mat-icon>air</mat-icon>
+                <div class="stat-value">
+                  {{ convertWindSpeed(weatherData.current.windSpeed) | number:'1.0-0' }} {{ windSpeedUnit }}
+                </div>
+                <div class="stat-label">
+                  {{ getWindDirection(weatherData.current.windDirection) }}
+                  ({{ weatherData.current.windDirection | number:'1.0-0' }}°)
+                </div>
+              </div>
+              
+              <div class="stat-item">
+                <mat-icon>visibility</mat-icon>
+                <div class="stat-value">
+                  {{ convertVisibility(weatherData.current.visibility) | number:'1.0-1' }} {{ visibilityUnit }}
+                </div>
+                <div class="stat-label">Visibility</div>
+              </div>
+              
+              <div class="stat-item">
+                <mat-icon>opacity</mat-icon>
+                <div class="stat-value">{{ weatherData.current.humidity | number:'1.0-0' }}%</div>
+                <div class="stat-label">Humidity</div>
+              </div>
+              
+              <div class="stat-item">
+                <mat-icon>water_drop</mat-icon>
+                <div class="stat-value">
+                  {{ convertPrecipitation(weatherData.current.precipitation.rate) | number:'1.1-1' }} {{ precipitationUnit }}/hr
+                </div>
+                <div class="stat-label">Precipitation</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- View Toggle -->
+    <div class="view-toggle">
+      <div class="toggle-buttons">
+        <button mat-button 
+                *ngFor="let view of views"
+                [class.active]="selectedView === view.value" 
+                (click)="setView(view.value)">
+          <mat-icon>{{ view.icon }}</mat-icon>
+          {{ view.label }}
+        </button>
+      </div>
+      
+      <div class="view-controls">
+        <mat-form-field appearance="outline" class="time-range-field">
+          <mat-label>Time Range</mat-label>
+          <mat-select [(value)]="selectedTimeRange" (selectionChange)="applyFilters()">
+            <mat-option *ngFor="let range of timeRanges" [value]="range.value">
+              {{ range.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="station-field">
+          <mat-label>Weather Station</mat-label>
+          <mat-select [(value)]="selectedStation" (selectionChange)="applyFilters()">
+            <mat-option *ngFor="let station of stations" [value]="station.id">
+              {{ station.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+  
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Dashboard View -->
+      <div class="dashboard-view" *ngIf="selectedView === 'DASHBOARD'">
+        <div class="dashboard-row">
+          <!-- Weather Map -->
+          <div class="dashboard-card large-card" *ngIf="showMap">
+            <div class="card-header">
+              <h3>Airport Weather Map</h3>
+              <span class="card-subtitle">Real-time conditions and station data</span>
+            </div>
+            <div class="card-content">
+              <canvas #weatherMap class="weather-map"></canvas>
+            </div>
+          </div>
+  
+          <!-- Weather Stations -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Weather Stations</h3>
+              <span class="card-subtitle">Latest readings from all stations</span>
+            </div>
+            <div class="card-content">
+              <div class="stations-list">
+                <div *ngFor="let station of weatherStations" class="station-item">
+                  <div class="station-header">
+                    <div class="station-name">{{ station.name }}</div>
+                    <div class="station-distance">{{ station.distance }} km</div>
+                  </div>
+                  
+                  <div class="station-readings">
+                    <div class="reading">
+                      <mat-icon>thermostat</mat-icon>
+                      <span class="reading-value">
+                        {{ convertTemperature(station.temperature) | number:'1.0-0' }}°
+                      </span>
+                    </div>
+                    
+                    <div class="reading">
+                      <mat-icon>air</mat-icon>
+                      <span class="reading-value">
+                        {{ convertWindSpeed(station.windSpeed) | number:'1.0-0' }} {{ windSpeedUnit }}
+                      </span>
+                    </div>
+                    
+                    <div class="reading">
+                      <mat-icon>opacity</mat-icon>
+                      <span class="reading-value">{{ station.humidity | number:'1.0-0' }}%</span>
+                    </div>
+                  </div>
+                  
+                  <div class="station-update">
+                    Updated: {{ station.lastUpdate | date:'HH:mm' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <div class="dashboard-row">
+          <!-- Risk Assessment -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Operational Risk Assessment</h3>
+              <span class="card-subtitle">Current weather impact on operations</span>
+            </div>
+            <div class="card-content">
+              <div class="risk-assessment">
+                <div class="overall-risk" [class]="getRiskClass(weatherData?.impact?.overallRisk || 'LOW')">
+                  <div class="risk-level">{{ weatherData?.impact?.overallRisk || 'LOW' }}</div>
+                  <div class="risk-label">Overall Risk Level</div>
+                </div>
+                
+                <div class="risk-breakdown">
+                  <div *ngFor="let op of weatherData?.impact?.flightOperations" class="risk-item">
+                    <div class="operation">{{ op.operation }}</div>
+                    <div class="impact" [class]="getImpactClass(op.restriction)">
+                      {{ op.restriction }}
+                    </div>
+                    <div class="delay" *ngIf="op.estimatedDelay > 0">
+                      {{ op.estimatedDelay }} min delay
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Runway Conditions -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Runway Conditions</h3>
+              <span class="card-subtitle">Current surface conditions and visibility</span>
+            </div>
+            <div class="card-content">
+              <div class="runway-conditions">
+                <div *ngFor="let runway of weatherData?.impact?.runwayConditions" class="runway-item">
+                  <div class="runway-name">{{ runway.runway }}</div>
+                  <div class="runway-details">
+                    <div class="condition">{{ runway.condition }}</div>
+                    <div class="friction">Friction: {{ runway.friction | number:'1.2-2' }}</div>
+                    <div class="visibility">Visibility: {{ runway.visibility | number:'1.1-1' }} km</div>
+                  </div>
+                  <div class="runway-recommendation">
+                    {{ runway.recommendation }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Quick Stats -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3>Weather Statistics</h3>
+              <span class="card-subtitle">Key metrics at a glance</span>
+            </div>
+            <div class="card-content">
+              <div class="quick-stats">
+                <div class="stat-box">
+                  <div class="stat-icon-container" style="background: rgba(33, 150, 243, 0.1);">
+                    <mat-icon class="stat-icon" style="color: #2196F3;">thermostat</mat-icon>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value">
+                      {{ convertTemperature(stats.currentTemp) | number:'1.0-0' }}°
+                    </div>
+                    <div class="stat-label">Temperature</div>
+                  </div>
+                </div>
+                
+                <div class="stat-box">
+                  <div class="stat-icon-container" style="background: rgba(76, 175, 80, 0.1);">
+                    <mat-icon class="stat-icon" style="color: #4CAF50;">air</mat-icon>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value">
+                      {{ convertWindSpeed(stats.windSpeed) | number:'1.0-0' }}
+                    </div>
+                    <div class="stat-label">Wind Speed</div>
+                  </div>
+                </div>
+                
+                <div class="stat-box">
+                  <div class="stat-icon-container" style="background: rgba(255, 152, 0, 0.1);">
+                    <mat-icon class="stat-icon" style="color: #FF9800;">visibility</mat-icon>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value">
+                      {{ convertVisibility(stats.visibility) | number:'1.1-1' }}
+                    </div>
+                    <div class="stat-label">Visibility</div>
+                  </div>
+                </div>
+                
+                <div class="stat-box">
+                  <div class="stat-icon-container" style="background: rgba(156, 39, 176, 0.1);">
+                    <mat-icon class="stat-icon" style="color: #9C27B0;">warning</mat-icon>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value">{{ stats.alerts }}</div>
+                    <div class="stat-label">Active Alerts</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Forecast View -->
+      <div class="forecast-view" *ngIf="selectedView === 'FORECAST'">
+        <div class="view-header">
+          <h2>Weather Forecast</h2>
+          <div class="forecast-toggle">
+            <button mat-button 
+                    [class.active]="selectedForecastType === 'HOURLY'" 
+                    (click)="selectedForecastType = 'HOURLY'">
+              Hourly (24h)
+            </button>
+            <button mat-button 
+                    [class.active]="selectedForecastType === 'DAILY'" 
+                    (click)="selectedForecastType = 'DAILY'">
+              Daily (7 days)
+            </button>
+          </div>
+        </div>
+        
+        <div class="forecast-content">
+          <div class="forecast-timeline">
+            <ng-container *ngFor="let forecast of weatherData?.forecast">
+              <div class="forecast-item"
+                   *ngIf="forecast.period === selectedForecastType">
+              <div class="forecast-time">
+                <div *ngIf="selectedForecastType === 'HOURLY'">
+                  {{ forecast.timestamp | date:'HH:mm' }}
+                </div>
+                <div *ngIf="selectedForecastType === 'DAILY'">
+                  {{ forecast.timestamp | date:'EEE' }}
+                </div>
+              </div>
+              
+              <div class="forecast-condition">
+                <mat-icon>{{ getConditionIcon(forecast.condition) }}</mat-icon>
+                <div class="condition-text">{{ forecast.condition.replace('_', ' ') }}</div>
+              </div>
+              
+              <div class="forecast-temp">
+                <div class="temp-high">
+                  H: {{ convertTemperature(forecast.temperature.high) | number:'1.0-0' }}°
+                </div>
+                <div class="temp-low">
+                  L: {{ convertTemperature(forecast.temperature.low) | number:'1.0-0' }}°
+                </div>
+              </div>
+              
+              <div class="forecast-precipitation">
+                <mat-icon>water_drop</mat-icon>
+                <div class="precip-probability">
+                  {{ (forecast.precipitation.probability * 100) | number:'1.0-0' }}%
+                </div>
+              </div>
+              
+              <div class="forecast-wind">
+                <mat-icon>air</mat-icon>
+                <div class="wind-speed">
+                  {{ convertWindSpeed(forecast.wind.speed) | number:'1.0-0' }}
+                </div>
+              </div>
+            </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Radar View -->
+      <div class="radar-view" *ngIf="selectedView === 'RADAR'">
+        <div class="view-header">
+          <h2>Weather Radar</h2>
+          <div class="radar-info">
+            Live precipitation radar covering 100 {{ visibilityUnit }} radius
+          </div>
+        </div>
+        
+        <div class="radar-content">
+          <div class="radar-container">
+            <canvas #radarCanvas class="radar-canvas"></canvas>
+            <div class="radar-overlay">
+              <div class="radar-controls">
+                <button mat-icon-button>
+                  <mat-icon>play_arrow</mat-icon>
+                </button>
+                <button mat-icon-button>
+                  <mat-icon>pause</mat-icon>
+                </button>
+                <button mat-icon-button>
+                  <mat-icon>replay</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="radar-stats">
+            <div class="stat-card">
+              <div class="stat-title">Precipitation Intensity</div>
+              <div class="stat-value">Light to Moderate</div>
+              <div class="stat-trend">Steady</div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-title">Storm Movement</div>
+              <div class="stat-value">NE at 25 {{ windSpeedUnit }}</div>
+              <div class="stat-trend">Approaching airport</div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-title">Expected Impact</div>
+              <div class="stat-value">30-45 minutes</div>
+              <div class="stat-trend">Increasing intensity</div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Alerts View -->
+      <div class="alerts-view" *ngIf="selectedView === 'ALERTS'">
+        <div class="view-header">
+          <h2>Weather Alerts & Warnings</h2>
+          <div class="alert-count">
+            {{ weatherData?.alerts?.length || 0 }} active alerts
+          </div>
+        </div>
+        
+        <div class="alerts-content">
+          <div class="alerts-list">
+            <div *ngFor="let alert of weatherData?.alerts" 
+                 class="alert-card"
+                 [style.border-left-color]="getAlertColor(alert.severity)">
+              <div class="alert-header">
+                <div class="alert-type">{{ alert.type.replace('_', ' ') }}</div>
+                <div class="alert-severity" [style.background-color]="getAlertColor(alert.severity)">
+                  {{ alert.severity }}
+                </div>
+              </div>
+              
+              <div class="alert-body">
+                <h4 class="alert-headline">{{ alert.headline }}</h4>
+                <p class="alert-description">{{ alert.description }}</p>
+                
+                <div class="alert-details">
+                  <div class="detail-item">
+                    <mat-icon>warning</mat-icon>
+                    <span>{{ alert.instructions }}</span>
+                  </div>
+                  
+                  <div class="detail-item">
+                    <mat-icon>location_on</mat-icon>
+                    <span>Areas: {{ alert.areas.join(', ') }}</span>
+                  </div>
+                  
+                  <div class="detail-item">
+                    <mat-icon>schedule</mat-icon>
+                    <span>
+                      Effective: {{ alert.effective | date:'MMM d, HH:mm' }} - 
+                      {{ alert.expires | date:'MMM d, HH:mm' }}
+                    </span>
+                  </div>
+                  
+                  <div class="detail-item">
+                    <mat-icon>priority_high</mat-icon>
+                    <span>
+                      Certainty: {{ alert.certainty }} | Urgency: {{ alert.urgency }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="alert-actions">
+                <button mat-button>
+                  <mat-icon>notifications</mat-icon>
+                  Notify Operations
+                </button>
+                <button mat-button>
+                  <mat-icon>history</mat-icon>
+                  View History
+                </button>
+              </div>
+            </div>
+            
+            <div class="no-alerts" *ngIf="!weatherData?.alerts?.length">
+              <mat-icon class="no-alerts-icon">check_circle</mat-icon>
+              <h3>No Active Weather Alerts</h3>
+              <p>All weather conditions are within normal operational limits.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Impact View -->
+      <div class="impact-view" *ngIf="selectedView === 'IMPACT'">
+        <div class="view-header">
+          <h2>Weather Impact Analysis</h2>
+          <div class="impact-summary">
+            Overall Impact: 
+            <span class="impact-level" [class]="getRiskClass(weatherData?.impact?.overallRisk || 'LOW')">
+              {{ weatherData?.impact?.overallRisk || 'LOW' }}
+            </span>
+          </div>
+        </div>
+        
+        <div class="impact-content">
+          <div class="impact-grid">
+            <!-- Flight Operations Impact -->
+            <div class="impact-card">
+              <div class="impact-header">
+                <h3>
+                  <mat-icon>flight</mat-icon>
+                  Flight Operations
+                </h3>
+              </div>
+              <div class="impact-body">
+                <div *ngFor="let impact of weatherData?.impact?.flightOperations" class="impact-item">
+                  <div class="impact-operation">{{ impact.operation }}</div>
+                  <div class="impact-details">
+                    <div class="impact-restriction" [class]="getImpactClass(impact.restriction)">
+                      {{ impact.restriction }}
+                    </div>
+                    <div class="impact-reason">{{ impact.reason }}</div>
+                    <div class="impact-delay" *ngIf="impact.estimatedDelay > 0">
+                      Estimated delay: {{ impact.estimatedDelay }} minutes
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <!-- Ground Operations Impact -->
+            <div class="impact-card">
+              <div class="impact-header">
+                <h3>
+                  <mat-icon>engineering</mat-icon>
+                  Ground Operations
+                </h3>
+              </div>
+              <div class="impact-body">
+                <div *ngFor="let impact of weatherData?.impact?.groundOperations" class="impact-item">
+                  <div class="impact-operation">{{ impact.operation }}</div>
+                  <div class="impact-details">
+                    <div class="impact-restriction" [class]="getImpactClass(impact.restriction)">
+                      {{ impact.restriction }}
+                    </div>
+                    <div class="impact-reason">{{ impact.reason }}</div>
+                    <div class="impact-delay" *ngIf="impact.estimatedDelay > 0">
+                      Estimated delay: {{ impact.estimatedDelay }} minutes
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <!-- Passenger Impact -->
+            <div class="impact-card">
+              <div class="impact-header">
+                <h3>
+                  <mat-icon>people</mat-icon>
+                  Passenger Impact
+                </h3>
+              </div>
+              <div class="impact-body">
+                <div class="passenger-impact">
+                  <div class="impact-metric">
+                    <div class="metric-label">Terminal Access:</div>
+                    <div class="metric-value">{{ weatherData?.impact?.passengerImpact?.terminalAccess }}</div>
+                  </div>
+                  
+                  <div class="impact-metric">
+                    <div class="metric-label">Security Delay:</div>
+                    <div class="metric-value">{{ weatherData?.impact?.passengerImpact?.securityDelay }} min</div>
+                  </div>
+                  
+                  <div class="impact-metric">
+                    <div class="metric-label">Baggage Delay:</div>
+                    <div class="metric-value">{{ weatherData?.impact?.passengerImpact?.baggageDelay }} min</div>
+                  </div>
+                  
+                  <div class="impact-metric">
+                    <div class="metric-label">Transportation Delay:</div>
+                    <div class="metric-value">{{ weatherData?.impact?.passengerImpact?.transportationDelay }} min</div>
+                  </div>
+                </div>
+                
+                <div class="recommendations" *ngIf="weatherData?.impact?.passengerImpact?.recommendations?.length">
+                  <h4>Passenger Recommendations:</h4>
+                  <ul>
+                    <li *ngFor="let rec of weatherData?.impact?.passengerImpact?.recommendations">{{ rec }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+  
+            <!-- Equipment Status -->
+            <div class="impact-card">
+              <div class="impact-header">
+                <h3>
+                  <mat-icon>construction</mat-icon>
+                  Equipment Status
+                </h3>
+              </div>
+              <div class="impact-body">
+                <div *ngFor="let equipment of weatherData?.impact?.equipmentStatus" class="equipment-item">
+                  <div class="equipment-name">{{ equipment.equipment }}</div>
+                  <div class="equipment-status" [class]="equipment.status.toLowerCase()">
+                    {{ equipment.status }}
+                  </div>
+                  <div class="equipment-reason">{{ equipment.reason }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Historical View -->
+      <div class="historical-view" *ngIf="selectedView === 'HISTORICAL'">
+        <div class="view-header">
+          <h2>Historical Weather Data</h2>
+          <div class="historical-info">
+            Last 7 days of weather observations
+          </div>
+        </div>
+        
+        <div class="historical-content">
+          <div class="historical-chart">
+            <div class="chart-placeholder">
+              <mat-icon class="chart-icon">show_chart</mat-icon>
+              <div>Temperature Trend (Last 7 Days)</div>
+            </div>
+          </div>
+          
+          <div class="historical-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Condition</th>
+                  <th>Temp (°{{ temperatureUnit }})</th>
+                  <th>Wind ({{ windSpeedUnit }})</th>
+                  <th>Visibility ({{ visibilityUnit }})</th>
+                  <th>Precipitation ({{ precipitationUnit }})</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let day of historicalData">
+                  <td>{{ day.timestamp | date:'MMM d' }}</td>
+                  <td>
+                    <div class="condition-cell">
+                      <mat-icon>{{ getConditionIcon(day.current.condition) }}</mat-icon>
+                      {{ day.current.condition.replace('_', ' ') }}
+                    </div>
+                  </td>
+                  <td>{{ convertTemperature(day.current.temperature) | number:'1.0-0' }}°</td>
+                  <td>{{ convertWindSpeed(day.current.windSpeed) | number:'1.0-0' }}</td>
+                  <td>{{ convertVisibility(day.current.visibility) | number:'1.1-1' }}</td>
+                  <td>{{ convertPrecipitation(day.current.precipitation.rate) | number:'1.1-1' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" *ngIf="isLoading">
+      <mat-spinner diameter="50"></mat-spinner>
+      <div>Loading weather data...</div>
+    </div>
+  </div>

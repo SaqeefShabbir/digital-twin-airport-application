@@ -1,0 +1,364 @@
+<div #dashboardRef class="airport-dashboard" [class.fullscreen]="isFullscreen" [class.loading]="isLoading"
+     [class.compact-layout]="dashboardLayout === 'compact'" [class.expanded-layout]="dashboardLayout === 'expanded'">
+  
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-content">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Initializing Airport Digital Twin...</p>
+      <p class="loading-subtext">Loading real-time data and 3D visualization</p>
+    </div>
+  </div>
+
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <div class="logo-section">
+        <mat-icon class="logo-icon">flight_takeoff</mat-icon>
+        <div class="logo-text">
+          <h1>Airport Digital Twin</h1>
+          <p class="airport-subtitle">John F. Kennedy International Airport (JFK)</p>
+        </div>
+      </div>
+
+      <div class="simulation-info">
+        <div class="simulation-time">
+          <mat-icon>schedule</mat-icon>
+          <span>{{ simulationTime | date:'MMM d, y HH:mm:ss' }}</span>
+        </div>
+        <div class="simulation-status">
+          <span class="status-indicator" [class.active]="isSimulationRunning"></span>
+          {{ isSimulationRunning ? 'Simulation Running' : 'Simulation Paused' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="control-panel">
+        <div class="speed-control">
+          <button mat-icon-button (click)="changeSimulationSpeed(0.5)" [class.active]="simulationSpeed === 0.5">
+            0.5x
+          </button>
+          <button mat-icon-button (click)="changeSimulationSpeed(1)" [class.active]="simulationSpeed === 1">
+            1x
+          </button>
+          <button mat-icon-button (click)="changeSimulationSpeed(2)" [class.active]="simulationSpeed === 2">
+            2x
+          </button>
+          <button mat-icon-button (click)="changeSimulationSpeed(5)" [class.active]="simulationSpeed === 5">
+            5x
+          </button>
+        </div>
+
+        <button mat-icon-button [color]="isSimulationRunning ? 'warn' : 'primary'" 
+                [matTooltip]="isSimulationRunning ? 'Pause Simulation' : 'Start Simulation'"
+                (click)="toggleSimulation()">
+          <mat-icon>{{ isSimulationRunning ? 'pause' : 'play_arrow' }}</mat-icon>
+        </button>
+
+        <button mat-icon-button [matTooltip]="autoRefreshEnabled ? 'Auto-refresh ON' : 'Auto-refresh OFF'"
+                [color]="autoRefreshEnabled ? 'primary' : ''" (click)="toggleAutoRefresh()">
+          <mat-icon>{{ autoRefreshEnabled ? 'sync' : 'sync_disabled' }}</mat-icon>
+        </button>
+
+        <button mat-icon-button matTooltip="Fullscreen" (click)="toggleFullscreen()">
+          <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+
+        <button mat-icon-button matTooltip="Settings" (click)="openSettings()">
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+
+      <div class="last-update">
+        <span>Last update: {{ lastUpdateTime | date:'HH:mm:ss' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Alert Banner -->
+  <div class="alert-banner" *ngIf="activeAlerts.length > 0" [class.critical]="activeAlerts.some(a => a.priority === 1)">
+    <div class="alert-content">
+      <mat-icon class="alert-icon">warning</mat-icon>
+      <div class="alert-text">
+        <strong>{{ activeAlerts.length }} active alert(s)</strong>
+        <span *ngIf="activeAlerts.some(a => a.priority === 1)" class="critical-text">
+          - {{ activeAlerts.filter(a => a.priority === 1).length }} critical
+        </span>
+      </div>
+      <button mat-button color="warn" (click)="acknowledgeAllAlerts()">Acknowledge All</button>
+      <button mat-button (click)="selectedTabIndex = 7">View Details</button>
+    </div>
+  </div>
+
+  <!-- Weather Overview -->
+  <div class="weather-overview" *ngIf="showCharts">
+    <mat-card class="weather-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>cloud</mat-icon>
+          Weather Conditions
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="weather-details">
+          <div class="weather-main">
+            <mat-icon class="weather-icon">{{ getWeatherIcon(weatherData.condition) }}</mat-icon>
+            <div class="weather-temp">{{ weatherData.temperature }}°C</div>
+          </div>
+          <div class="weather-info">
+            <div class="weather-condition">{{ weatherData.condition }}</div>
+            <div class="weather-stats">
+              <div class="weather-stat">
+                <mat-icon>air</mat-icon>
+                <span>{{ weatherData.windSpeed }} km/h</span>
+              </div>
+              <div class="weather-stat">
+                <mat-icon>water_drop</mat-icon>
+                <span>{{ weatherData.humidity }}%</span>
+              </div>
+              <div class="weather-stat">
+                <mat-icon>visibility</mat-icon>
+                <span>{{ weatherData.visibility }} km</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="dashboard-content">
+    <!-- Left Panel - Key Metrics -->
+    <div class="left-panel">
+      <!-- Quick Stats -->
+      <div class="quick-stats">
+        <mat-card class="stat-card">
+          <div class="stat-header">
+            <mat-icon class="stat-icon">flight</mat-icon>
+            <h3>Flights</h3>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ airportMetrics.totalFlights }}</div>
+            <div class="stat-details">
+              <span class="stat-detail active">{{ airportMetrics.activeFlights }} Active</span>
+              <span class="stat-detail delayed">{{ airportMetrics.delayedFlights }} Delayed</span>
+            </div>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <div class="stat-header">
+            <mat-icon class="stat-icon">people</mat-icon>
+            <h3>Passengers</h3>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ airportMetrics.passengerCount | number:'1.0-0' }}</div>
+            <div class="stat-details">
+              <span class="stat-detail">In Terminal</span>
+            </div>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <div class="stat-header">
+            <mat-icon class="stat-icon">location_on</mat-icon>
+            <h3>Gates</h3>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ airportMetrics.gateOccupancy }}%</div>
+            <div class="stat-details">
+              <span class="stat-detail">Occupancy Rate</span>
+            </div>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <div class="stat-header">
+            <mat-icon class="stat-icon">schedule</mat-icon>
+            <h3>Wait Times</h3>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ airportMetrics.securityWaitTime }} min</div>
+            <div class="stat-details">
+              <span class="stat-detail">Security</span>
+              <span class="stat-detail">{{ airportMetrics.baggageWaitTime }} min Baggage</span>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+
+      <!-- Terminal Status -->
+      <mat-card class="terminal-status-card">
+        <mat-card-header>
+          <mat-card-title>Terminal Status</mat-card-title>
+          <mat-card-subtitle>Real-time terminal metrics</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="terminal-grid">
+            <div *ngFor="let terminal of terminalStatus" class="terminal-item"
+                 [class]="'crowdedness-' + terminal.crowdedness.toLowerCase()">
+              <div class="terminal-header">
+                <h4>{{ terminal.terminal }}</h4>
+                <span class="crowdedness-badge">{{ terminal.crowdedness }}</span>
+              </div>
+              <div class="terminal-metrics">
+                <div class="terminal-metric">
+                  <mat-icon>people</mat-icon>
+                  <span>{{ terminal.passengerCount | number }}</span>
+                </div>
+                <div class="terminal-metric">
+                  <mat-icon>security</mat-icon>
+                  <span>{{ terminal.securityWaitTime }} min</span>
+                </div>
+                <div class="terminal-metric">
+                  <mat-icon>luggage</mat-icon>
+                  <span>{{ terminal.baggageWaitTime }} min</span>
+                </div>
+              </div>
+              <div class="terminal-progress">
+                <mat-progress-bar mode="determinate" [value]="getTerminalOccupancy(terminal)"></mat-progress-bar>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recent Flights -->
+      <mat-card class="recent-flights-card">
+        <mat-card-header>
+          <mat-card-title>Recent Flights</mat-card-title>
+          <mat-card-subtitle>Latest flight operations</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="flights-list">
+            <div *ngFor="let flight of recentFlights" class="flight-item">
+              <div class="flight-header">
+                <span class="flight-number">{{ flight.flightNumber }}</span>
+                <span class="flight-airline">{{ flight.airline }}</span>
+                <span class="flight-status" [style.color]="getStatusColor(flight.status)">
+                  {{ flight.status }}
+                </span>
+              </div>
+              <div class="flight-details">
+                <span class="flight-destination">
+                  <mat-icon>flight_takeoff</mat-icon>
+                  {{ flight.destination }}
+                </span>
+                <span class="flight-gate">
+                  <mat-icon>gate</mat-icon>
+                  Gate {{ flight.gate }}
+                </span>
+                <span class="flight-time">
+                  {{ flight.estimatedTime | date:'HH:mm' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Right Panel - Main Tabs -->
+    <div class="right-panel">
+      <mat-tab-group [(selectedIndex)]="selectedTabIndex" animationDuration="0ms" class="main-tabs">
+        <!-- Terminal View Tab -->
+        <mat-tab label="Terminal View">
+          <div class="tab-content">
+            <app-terminal-view></app-terminal-view>
+          </div>
+        </mat-tab>
+
+        <!-- Gate Management Tab -->
+        <mat-tab label="Gate Management">
+          <div class="tab-content">
+            <app-gate-management></app-gate-management>
+          </div>
+        </mat-tab>
+
+        <!-- Flight Operations Tab -->
+        <mat-tab label="Flight Operations">
+          <div class="tab-content">
+            <app-flight-operations></app-flight-operations>
+          </div>
+        </mat-tab>
+
+        <!-- Passenger Flow Tab -->
+        <mat-tab label="Passenger Flow">
+          <div class="tab-content">
+            <app-passenger-flow></app-passenger-flow>
+          </div>
+        </mat-tab>
+
+        <!-- Resource Management Tab -->
+        <mat-tab label="Resources">
+          <div class="tab-content">
+            <app-resource-management></app-resource-management>
+          </div>
+        </mat-tab>
+
+        <!-- Weather Integration Tab -->
+        <mat-tab label="Weather">
+          <div class="tab-content">
+            <app-weather-integration></app-weather-integration>
+          </div>
+        </mat-tab>
+
+        <!-- Analytics Tab -->
+        <mat-tab label="Analytics">
+          <div class="tab-content">
+            <app-analytics></app-analytics>
+          </div>
+        </mat-tab>
+
+        <!-- Alert System Tab -->
+        <mat-tab label="Alerts">
+          <div class="tab-content">
+            <app-alert-system></app-alert-system>
+          </div>
+        </mat-tab>
+
+        <!-- Control Panel Tab -->
+        <mat-tab label="Controls">
+          <div class="tab-content">
+            <app-control-panel></app-control-panel>
+          </div>
+        </mat-tab>
+
+        <!-- Settings Tab -->
+        <mat-tab label="Settings">
+          <div class="tab-content">
+            <app-settings></app-settings>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="dashboard-footer" *ngIf="showPerformance">
+    <div class="footer-content">
+      <div class="performance-metrics">
+        <div class="performance-metric">
+          <span>CPU: {{ systemPerformance.cpuUsage }}%</span>
+          <mat-progress-bar mode="determinate" [value]="systemPerformance.cpuUsage"></mat-progress-bar>
+        </div>
+        <div class="performance-metric">
+          <span>Memory: {{ systemPerformance.memoryUsage }}%</span>
+          <mat-progress-bar mode="determinate" [value]="systemPerformance.memoryUsage"></mat-progress-bar>
+        </div>
+        <div class="performance-metric">
+          <span>Network: {{ systemPerformance.networkLatency }}ms</span>
+          <mat-progress-bar mode="determinate" [value]="systemPerformance.networkLatency * 10"></mat-progress-bar>
+        </div>
+      </div>
+
+      <div class="system-info">
+        <span>Data refresh: {{ systemPerformance.dataRefreshRate }}s</span>
+        <span>Version: 2.1.0</span>
+        <span>Simulation speed: {{ simulationSpeed }}x</span>
+      </div>
+    </div>
+  </footer>
+</div>

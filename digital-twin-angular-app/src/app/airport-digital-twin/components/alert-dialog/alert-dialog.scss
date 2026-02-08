@@ -1,0 +1,473 @@
+@use '@angular/material' as mat;
+
+.alert-dialog-container {
+  width: 700px;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0c2461;
+  color: white;
+
+  &.edit-mode, &.create-mode {
+    width: 800px;
+  }
+}
+
+// Header Styles
+.dialog-header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  min-height: 72px;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .header-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+
+    .header-text {
+      h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .header-subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .priority-badge {
+          padding: 2px 8px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+          font-size: 11px;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .close-button {
+    color: rgba(255, 255, 255, 0.8);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// Content Styles
+mat-dialog-content {
+  flex: 1;
+  padding: 0 !important;
+  margin: 0;
+  max-height: calc(90vh - 130px);
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+}
+
+.alert-form {
+  padding: 24px;
+
+  .form-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+}
+
+// View Mode Styles
+.alert-details {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  .detail-row {
+    display: flex;
+    gap: 20px;
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+
+  .detail-item {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    mat-icon {
+      color: #3498db;
+      margin-top: 2px;
+    }
+
+    .detail-content {
+      flex: 1;
+
+      label {
+        display: block;
+        font-size: 12px;
+        opacity: 0.7;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+
+        &.type-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: white;
+        }
+      }
+    }
+  }
+
+  .action-required {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 8px;
+    color: #e74c3c;
+
+    mat-icon {
+      flex-shrink: 0;
+    }
+
+    .action-text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+}
+
+// Form Section Styles
+.form-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 20px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #3498db;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// Form Controls
+.full-width {
+  width: 100%;
+}
+
+.half-width {
+  width: calc(50% - 8px);
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    
+    .half-width {
+      width: 100%;
+    }
+  }
+}
+
+// Material Overrides
+::ng-deep {
+  .mat-mdc-form-field {
+    width: 100%;
+  }
+
+  .mat-mdc-text-field-wrapper {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+  }
+
+  .mat-mdc-form-field-outline {
+    color: rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .mat-mdc-form-field-outline-thick {
+    color: #3498db !important;
+  }
+
+  .mat-mdc-input-element {
+    color: white !important;
+  }
+
+  .mat-mdc-form-field-label {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .mat-mdc-select-value {
+    color: white !important;
+  }
+
+  .mat-mdc-select-arrow {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .mat-mdc-form-field-hint {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .mat-mdc-form-field-error {
+    color: #e74c3c !important;
+  }
+
+  .mat-mdc-option {
+    background: #0c2461 !important;
+    color: white !important;
+
+    &:hover, &.mat-mdc-option-active {
+      background: rgba(52, 152, 219, 0.2) !important;
+    }
+
+    &.mdc-list-item--selected {
+      background: rgba(52, 152, 219, 0.3) !important;
+    }
+
+    .priority-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  .mat-mdc-select-panel {
+    background: #0c2461 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px !important;
+  }
+
+  .mat-mdc-slide-toggle {
+    .mdc-switch__shadow {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .mdc-switch__track {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .mdc-switch__handle {
+      background: #95a5a6;
+    }
+
+    &.mat-checked {
+      .mdc-switch__track {
+        background: #3498db;
+      }
+
+      .mdc-switch__handle {
+        background: white;
+      }
+    }
+  }
+}
+
+// Toggle Groups
+.toggle-group {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .toggle-hint {
+    margin: 4px 0 0 36px;
+    font-size: 12px;
+    opacity: 0.7;
+    line-height: 1.4;
+  }
+}
+
+// Preview Section
+.preview-section {
+  .preview-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid #3498db;
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 12px;
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+
+      .preview-icon {
+        color: inherit;
+      }
+
+      .preview-title {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .preview-priority {
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 11px;
+          font-weight: 500;
+          color: white;
+        }
+      }
+    }
+
+    .preview-description {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
+
+    .preview-details {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      opacity: 0.7;
+
+      .preview-detail {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        mat-icon {
+          font-size: 14px;
+          width: 14px;
+          height: 14px;
+        }
+      }
+    }
+  }
+}
+
+// Dialog Actions
+.dialog-actions {
+  padding: 16px 24px !important;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0 !important;
+  min-height: 72px;
+
+  button {
+    min-width: 100px;
+
+    mat-icon {
+      margin-right: 4px;
+    }
+
+    &[color="primary"] {
+      background: #3498db;
+      color: white;
+    }
+
+    &[color="warn"] {
+      background: #e74c3c;
+      color: white;
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .alert-dialog-container {
+    max-height: 95vh;
+
+    &.edit-mode, &.create-mode {
+      width: 95vw;
+    }
+  }
+
+  mat-dialog-content {
+    max-height: calc(95vh - 130px);
+  }
+
+  .alert-form {
+    padding: 16px;
+  }
+
+  .form-section {
+    padding: 16px;
+  }
+}
+
+// Print Styles
+@media print {
+  .alert-dialog-container {
+    background: white;
+    color: black;
+    width: 100%;
+    max-width: none;
+    border: 1px solid #ccc;
+
+    .dialog-header {
+      background: #f5f5f5 !important;
+      color: black;
+    }
+
+    .dialog-actions {
+      display: none;
+    }
+  }
+}

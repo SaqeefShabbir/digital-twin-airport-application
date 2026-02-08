@@ -1,0 +1,305 @@
+<div class="alert-dialog-container" [class.edit-mode]="isEditMode" [class.create-mode]="isCreateMode">
+    <!-- Dialog Header -->
+    <div class="dialog-header" [style.background]="getPriorityColor(data.alert?.priority || 2)">
+      <div class="header-content">
+        <mat-icon class="header-icon">{{ 
+          isCreateMode ? 'add_alert' : 
+          isEditMode ? 'edit' : 
+          getPriorityIcon(data.alert?.priority || 2) 
+        }}</mat-icon>
+        <div class="header-text">
+          <h2 mat-dialog-title>
+            {{ 
+              isCreateMode ? 'Create New Alert' : 
+              isEditMode ? 'Edit Alert' : 
+              data.alert?.title || 'Alert Details' 
+            }}
+          </h2>
+          <p class="header-subtitle" *ngIf="!isCreateMode">
+            {{ getFormattedTimestamp() }}
+            <span class="priority-badge" *ngIf="data.alert?.priority">
+              Priority: {{ data.alert?.priority }}
+            </span>
+          </p>
+        </div>
+      </div>
+      <button mat-icon-button class="close-button" (click)="cancel()" aria-label="Close dialog">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  
+    <!-- Dialog Content -->
+    <mat-dialog-content>
+      <form [formGroup]="alertForm" class="alert-form">
+        <!-- View Mode Content -->
+        <ng-container *ngIf="data.mode === 'view' && data.alert">
+          <div class="alert-details">
+            <div class="detail-row">
+              <div class="detail-item">
+                <mat-icon>description</mat-icon>
+                <div class="detail-content">
+                  <label>Description</label>
+                  <p>{{ data.alert.description }}</p>
+                </div>
+              </div>
+            </div>
+  
+            <div class="detail-row">
+              <div class="detail-item">
+                <mat-icon>location_on</mat-icon>
+                <div class="detail-content">
+                  <label>Location</label>
+                  <p>{{ data.alert.location }}</p>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="data.alert.terminal">
+                <mat-icon>apartment</mat-icon>
+                <div class="detail-content">
+                  <label>Terminal</label>
+                  <p>{{ data.alert.terminal }}</p>
+                </div>
+              </div>
+            </div>
+  
+            <div class="detail-row">
+              <div class="detail-item">
+                <mat-icon>category</mat-icon>
+                <div class="detail-content">
+                  <label>Alert Type</label>
+                  <p class="type-badge" [style.background]="getPriorityColor(data.alert.priority)">
+                    {{ data.alert.type }}
+                  </p>
+                </div>
+              </div>
+              <div class="detail-item">
+                <mat-icon>priority_high</mat-icon>
+                <div class="detail-content">
+                  <label>Impact Level</label>
+                  <p>{{ getImpactLevel() }}</p>
+                </div>
+              </div>
+            </div>
+  
+            <div class="detail-row" *ngIf="data.alert.assignedTo">
+              <div class="detail-item">
+                <mat-icon>person</mat-icon>
+                <div class="detail-content">
+                  <label>Assigned To</label>
+                  <p>{{ data.alert.assignedTo }}</p>
+                </div>
+              </div>
+              <div class="detail-item" *ngIf="data.alert.estimatedResolutionTime">
+                <mat-icon>schedule</mat-icon>
+                <div class="detail-content">
+                  <label>Estimated Resolution</label>
+                  <p>{{ getEstimatedResolutionTime() }}</p>
+                </div>
+              </div>
+            </div>
+  
+            <div class="action-required" *ngIf="data.alert.priority <= 2">
+              <mat-icon>warning</mat-icon>
+              <div class="action-text">
+                <strong>Action Required:</strong> {{ 
+                  data.alert.priority === 1 ? 
+                  'Immediate attention needed. Escalate if unresolved within 15 minutes.' : 
+                  'Action required within 30 minutes.' 
+                }}
+              </div>
+            </div>
+          </div>
+        </ng-container>
+  
+        <!-- Edit/Create Mode Content -->
+        <ng-container *ngIf="data.mode !== 'view'">
+          <div class="form-sections">
+            <!-- Basic Information Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>info</mat-icon>
+                Alert Information
+              </h3>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Alert Title</mat-label>
+                <input matInput formControlName="title" placeholder="Enter alert title">
+                <mat-icon matSuffix>title</mat-icon>
+                <mat-error *ngIf="alertForm.get('title')?.hasError('required')">
+                  Title is required
+                </mat-error>
+              </mat-form-field>
+  
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Description</mat-label>
+                <textarea matInput formControlName="description" 
+                         placeholder="Describe the alert in detail" 
+                         rows="3"></textarea>
+                <mat-icon matSuffix>description</mat-icon>
+                <mat-hint>{{ alertForm.get('description')?.value?.length || 0 }}/500</mat-hint>
+                <mat-error *ngIf="alertForm.get('description')?.hasError('required')">
+                  Description is required
+                </mat-error>
+              </mat-form-field>
+  
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Alert Type</mat-label>
+                  <mat-select formControlName="type">
+                    <mat-option *ngFor="let type of alertTypes" [value]="type.value">
+                      <mat-icon>{{ type.icon }}</mat-icon>
+                      {{ type.label }}
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>category</mat-icon>
+                  <mat-error *ngIf="alertForm.get('type')?.hasError('required')">
+                    Alert type is required
+                  </mat-error>
+                </mat-form-field>
+  
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Priority</mat-label>
+                  <mat-select formControlName="priority">
+                    <mat-option *ngFor="let priority of priorities" [value]="priority.value">
+                      <span class="priority-option" [style.color]="priority.color">
+                        <mat-icon>{{ priority.icon }}</mat-icon>
+                        {{ priority.label }} (Level {{ priority.value }})
+                      </span>
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>priority_high</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+  
+            <!-- Location & Assignment Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>location_on</mat-icon>
+                Location & Assignment
+              </h3>
+  
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Location</mat-label>
+                  <mat-select formControlName="location">
+                    <mat-option *ngFor="let location of terminalLocations" [value]="location">
+                      {{ location }}
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>place</mat-icon>
+                </mat-form-field>
+  
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Terminal (Optional)</mat-label>
+                  <input matInput formControlName="terminal" placeholder="e.g., T1, Main Terminal">
+                  <mat-icon matSuffix>apartment</mat-icon>
+                </mat-form-field>
+              </div>
+  
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Assigned To (Optional)</mat-label>
+                  <input matInput formControlName="assignedTo" placeholder="Enter team or person">
+                  <mat-icon matSuffix>person</mat-icon>
+                </mat-form-field>
+  
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>Estimated Resolution Time (minutes)</mat-label>
+                  <input matInput type="number" formControlName="estimatedResolutionTime" 
+                         min="1" max="10080">
+                  <mat-icon matSuffix>schedule</mat-icon>
+                  <mat-hint>{{ getEstimatedResolutionTime() }}</mat-hint>
+                </mat-form-field>
+              </div>
+            </div>
+  
+            <!-- Notification Settings -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>notifications</mat-icon>
+                Notification Settings
+              </h3>
+  
+              <div class="toggle-group">
+                <mat-slide-toggle formControlName="requiresAcknowledgement" color="primary">
+                  Requires Acknowledgement
+                </mat-slide-toggle>
+                <p class="toggle-hint">Alert must be acknowledged by assigned personnel</p>
+              </div>
+  
+              <div class="toggle-group">
+                <mat-slide-toggle formControlName="sendNotification" color="primary">
+                  Send Immediate Notification
+                </mat-slide-toggle>
+                <p class="toggle-hint">Send push notification to relevant teams</p>
+              </div>
+  
+              <div class="toggle-group">
+                <mat-slide-toggle formControlName="autoEscalate" color="warn">
+                  Auto-escalate if unresolved
+                </mat-slide-toggle>
+                <p class="toggle-hint">Automatically escalate priority if not resolved in time</p>
+              </div>
+            </div>
+  
+            <!-- Impact Preview -->
+            <div class="form-section preview-section" *ngIf="alertForm.valid">
+              <h3 class="section-title">
+                <mat-icon>visibility</mat-icon>
+                Alert Preview
+              </h3>
+              
+              <div class="preview-card" [style.borderLeftColor]="getPriorityColor(alertForm.get('priority')?.value)">
+                <div class="preview-header">
+                  <mat-icon class="preview-icon">{{ getPriorityIcon(alertForm.get('priority')?.value) }}</mat-icon>
+                  <div class="preview-title">
+                    <strong>{{ alertForm.get('title')?.value }}</strong>
+                    <span class="preview-priority" [style.background]="getPriorityColor(alertForm.get('priority')?.value)">
+                      Priority {{ alertForm.get('priority')?.value }}
+                    </span>
+                  </div>
+                </div>
+                <p class="preview-description">{{ alertForm.get('description')?.value }}</p>
+                <div class="preview-details">
+                  <span class="preview-detail">
+                    <mat-icon>location_on</mat-icon>
+                    {{ alertForm.get('location')?.value }}
+                  </span>
+                  <span class="preview-detail">
+                    <mat-icon>schedule</mat-icon>
+                    {{ getEstimatedResolutionTime() }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </form>
+    </mat-dialog-content>
+  
+    <!-- Dialog Actions -->
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button (click)="cancel()">
+        {{ data.mode === 'view' ? 'Close' : 'Cancel' }}
+      </button>
+      
+      <ng-container *ngIf="data.mode === 'view'">
+        <button mat-button color="warn" (click)="acknowledge()" *ngIf="!data.alert?.acknowledged">
+          <mat-icon>check_circle</mat-icon>
+          Acknowledge
+        </button>
+        <button mat-button color="primary" (click)="resolve()">
+          <mat-icon>done_all</mat-icon>
+          Mark as Resolved
+        </button>
+      </ng-container>
+  
+      <ng-container *ngIf="data.mode !== 'view'">
+        <button mat-button (click)="cancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="save()" [disabled]="!alertForm.valid">
+          <mat-icon>{{ isCreateMode ? 'add' : 'save' }}</mat-icon>
+          {{ isCreateMode ? 'Create Alert' : 'Save Changes' }}
+        </button>
+      </ng-container>
+    </mat-dialog-actions>
+  </div>

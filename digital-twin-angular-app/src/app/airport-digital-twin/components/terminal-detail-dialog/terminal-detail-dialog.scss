@@ -1,0 +1,583 @@
+@use '@angular/material' as mat;
+
+.terminal-detail-dialog {
+  width: 1000px;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0c2461;
+  color: white;
+}
+
+// Dialog Header
+.dialog-header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #1e3799 0%, #0c2461 100%);
+  color: white;
+  min-height: 72px;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .header-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    .header-text {
+      h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .header-subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .crowdedness-badge {
+          padding: 2px 8px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+          font-size: 11px;
+          font-weight: 500;
+          text-transform: uppercase;
+        }
+
+        .occupancy {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+
+    button {
+      color: rgba(255, 255, 255, 0.8);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+// Dialog Content
+mat-dialog-content {
+  flex: 1;
+  padding: 0 !important;
+  margin: 0;
+  max-height: calc(90vh - 130px);
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+}
+
+.dialog-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+// Section Styles
+.info-section,
+.charts-section,
+.facilities-staff-section,
+.alerts-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #3498db;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .staff-total {
+    margin-left: auto;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+}
+
+// Form Styles
+.terminal-form {
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.half-width {
+  width: calc(50% - 8px);
+}
+
+// Material Overrides
+::ng-deep {
+  .mat-mdc-form-field {
+    width: 100%;
+  }
+
+  .mat-mdc-text-field-wrapper {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+  }
+
+  .mat-mdc-form-field-outline {
+    color: rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .mat-mdc-form-field-outline-thick {
+    color: #3498db !important;
+  }
+
+  .mat-mdc-input-element {
+    color: white !important;
+  }
+
+  .mat-mdc-form-field-label {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .mat-mdc-form-field-hint {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .mat-mdc-form-field-error {
+    color: #e74c3c !important;
+  }
+
+  .mat-mdc-select {
+    color: white !important;
+  }
+
+  .mat-mdc-select-arrow {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .mat-mdc-option {
+    background: #0c2461 !important;
+    color: white !important;
+
+    &:hover {
+      background: rgba(52, 152, 219, 0.2) !important;
+    }
+
+    &.mdc-list-item--selected {
+      background: rgba(52, 152, 219, 0.3) !important;
+    }
+  }
+
+  .mat-mdc-select-panel {
+    background: #0c2461 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px !important;
+  }
+}
+
+// Wait Time Display
+.wait-time-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wait-time-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #3498db;
+  position: relative;
+
+  .wait-time-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      opacity: 0.8;
+    }
+
+    span {
+      font-weight: 500;
+    }
+  }
+
+  .wait-time-value {
+    font-size: 24px;
+    font-weight: 300;
+    margin-bottom: 4px;
+  }
+
+  .wait-time-status {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+  }
+
+  .wait-time-input {
+    ::ng-deep .mat-mdc-form-field {
+      margin: 0;
+      
+      .mat-mdc-text-field-wrapper {
+        background: rgba(255, 255, 255, 0.1) !important;
+      }
+    }
+  }
+}
+
+// Charts Section
+.charts-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 24px;
+
+  .chart-container {
+    &:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    
+    .chart-container:first-child {
+      grid-column: 1;
+    }
+  }
+}
+
+.chart-wrapper {
+  height: 300px;
+  position: relative;
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+// Facilities & Staff
+.facilities-staff-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.facilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.facility-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &.status-normal {
+    border-left: 3px solid #2ecc71;
+  }
+
+  &.status-warning {
+    border-left: 3px solid #f39c12;
+  }
+
+  &.status-maintenance {
+    border-left: 3px solid #3498db;
+  }
+
+  .facility-info {
+    .facility-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .facility-count {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+  }
+
+  .facility-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+
+      &.warning {
+        color: #f39c12;
+      }
+    }
+
+    .status-text {
+      font-size: 10px;
+      opacity: 0.7;
+      text-transform: capitalize;
+    }
+  }
+}
+
+.staff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.staff-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 12px;
+
+  .dept-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .dept-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .dept-count {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  }
+
+  .coverage-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+
+    .coverage-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+  }
+
+  .coverage-percentage {
+    font-size: 12px;
+    font-weight: 500;
+    text-align: right;
+  }
+}
+
+// Alerts Section
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 80px 100px 1fr 80px;
+  gap: 16px;
+  align-items: center;
+  font-size: 13px;
+
+  &.priority-high {
+    border-left: 3px solid #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+  }
+
+  &.priority-medium {
+    border-left: 3px solid #f39c12;
+    background: rgba(243, 156, 18, 0.1);
+  }
+
+  &.priority-low {
+    border-left: 3px solid #3498db;
+    background: rgba(52, 152, 219, 0.1);
+  }
+
+  .alert-time {
+    font-weight: 500;
+    opacity: 0.9;
+  }
+
+  .alert-type {
+    font-weight: 500;
+  }
+
+  .alert-message {
+    opacity: 0.9;
+  }
+
+  .alert-priority {
+    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-align: center;
+
+    .priority-high & {
+      background: rgba(231, 76, 60, 0.3);
+      color: #e74c3c;
+    }
+
+    .priority-medium & {
+      background: rgba(243, 156, 18, 0.3);
+      color: #f39c12;
+    }
+
+    .priority-low & {
+      background: rgba(52, 152, 219, 0.3);
+      color: #3498db;
+    }
+  }
+}
+
+// Dialog Actions
+.dialog-actions {
+  padding: 16px 24px !important;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0 !important;
+  min-height: 72px;
+
+  button {
+    min-width: 100px;
+
+    &[color="primary"] {
+      background: #3498db;
+      color: white;
+
+      &:disabled {
+        opacity: 0.5;
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .terminal-detail-dialog {
+    max-height: 95vh;
+  }
+
+  mat-dialog-content {
+    max-height: calc(95vh - 130px);
+  }
+
+  .dialog-content {
+    padding: 16px;
+    gap: 24px;
+  }
+
+  .info-section,
+  .charts-section,
+  .facilities-staff-section,
+  .alerts-section {
+    padding: 16px;
+  }
+
+  .alert-item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+// Loading Spinner
+::ng-deep .mat-mdc-progress-spinner {
+  width: 20px !important;
+  height: 20px !important;
+
+  circle {
+    stroke: white;
+  }
+}

@@ -1,0 +1,391 @@
+<div class="settings-dialog-container">
+  <!-- Dialog Header -->
+  <div class="dialog-header">
+    <div class="header-content">
+      <mat-icon class="header-icon">settings</mat-icon>
+      <div class="header-text">
+        <h2 mat-dialog-title>Dashboard Settings</h2>
+        <p class="header-subtitle">Configure your Airport Digital Twin experience</p>
+      </div>
+    </div>
+    <button mat-icon-button class="close-button" (click)="cancel()" aria-label="Close settings">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Settings Tabs -->
+  <mat-tab-group [(selectedIndex)]="activeTabIndex" class="settings-tabs" animationDuration="0ms">
+    
+    <!-- Display Tab -->
+    <mat-tab label="Display">
+      <div class="tab-content">
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>dashboard</mat-icon>
+            Layout & Theme
+          </h3>
+          
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Dashboard Layout</mat-label>
+              <mat-select formControlName="layout">
+                <mat-option *ngFor="let layout of layouts" [value]="layout.value">
+                  <div class="layout-option">
+                    <mat-icon>{{ layout.icon }}</mat-icon>
+                    <div class="option-text">
+                      <div class="option-title">{{ layout.label }}</div>
+                      <div class="option-description">{{ layout.description }}</div>
+                    </div>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>{{ getSelectedLayoutIcon() }}</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Color Theme</mat-label>
+              <mat-select formControlName="theme">
+                <mat-option *ngFor="let theme of themes" [value]="theme.value">
+                  <div class="theme-option">
+                    <mat-icon>{{ theme.icon }}</mat-icon>
+                    <div class="option-text">
+                      <div class="option-title">{{ theme.label }}</div>
+                      <div class="option-description">{{ theme.description }}</div>
+                    </div>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>{{ getSelectedThemeIcon() }}</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Dashboard Title</mat-label>
+            <input matInput formControlName="dashboardTitle" placeholder="Enter custom dashboard title">
+            <mat-icon matSuffix>title</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>visibility</mat-icon>
+            Visibility Controls
+          </h3>
+          
+          <div class="toggle-grid">
+            <mat-slide-toggle formControlName="showCharts" color="primary">
+              Show Charts & Graphs
+            </mat-slide-toggle>
+            <p class="toggle-description">Display data visualizations and charts</p>
+            
+            <mat-slide-toggle formControlName="showNotifications" color="primary">
+              Show Notifications Panel
+            </mat-slide-toggle>
+            <p class="toggle-description">Display real-time notifications and alerts</p>
+            
+            <mat-slide-toggle formControlName="showPerformance" color="primary">
+              Show Performance Metrics
+            </mat-slide-toggle>
+            <p class="toggle-description">Display system performance in footer</p>
+            
+            <mat-slide-toggle formControlName="showWeather" color="primary">
+              Show Weather Overview
+            </mat-slide-toggle>
+            <p class="toggle-description">Display weather conditions panel</p>
+            
+            <mat-slide-toggle formControlName="showTerminalStatus" color="primary">
+              Show Terminal Status
+            </mat-slide-toggle>
+            <p class="toggle-description">Display terminal metrics and status</p>
+            
+            <mat-slide-toggle formControlName="showRecentFlights" color="primary">
+              Show Recent Flights
+            </mat-slide-toggle>
+            <p class="toggle-description">Display recent flight operations</p>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>schedule</mat-icon>
+            Date & Time
+          </h3>
+          
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Time Format</mat-label>
+              <mat-select formControlName="timeFormat">
+                <mat-option value="24h">24-Hour Format (14:30)</mat-option>
+                <mat-option value="12h">12-Hour Format (2:30 PM)</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>access_time</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Date Format</mat-label>
+              <mat-select formControlName="dateFormat">
+                <mat-option value="short">Short (MM/DD/YYYY)</mat-option>
+                <mat-option value="medium">Medium (MMM DD, YYYY)</mat-option>
+                <mat-option value="long">Long (Month DD, YYYY)</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>calendar_today</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Temperature Unit</mat-label>
+            <mat-select formControlName="temperatureUnit">
+              <mat-option value="celsius">Celsius (°C)</mat-option>
+              <mat-option value="fahrenheit">Fahrenheit (°F)</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>thermostat</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Data Tab -->
+    <mat-tab label="Data">
+      <div class="tab-content">
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>sync</mat-icon>
+            Data Refresh
+          </h3>
+          
+          <div class="toggle-group">
+            <mat-slide-toggle formControlName="autoRefresh" color="primary" (change)="onAutoRefreshChange($event)">
+              Enable Auto-refresh
+            </mat-slide-toggle>
+            <p class="toggle-description">Automatically refresh dashboard data</p>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width" [class.disabled]="!settingsForm.get('autoRefresh')?.value">
+            <mat-label>Refresh Rate</mat-label>
+            <mat-select formControlName="refreshRate" [disabled]="!settingsForm.get('autoRefresh')?.value">
+              <mat-option *ngFor="let rate of refreshRates" [value]="rate.value">
+                {{ rate.label }}
+                <span class="option-hint">{{ rate.description }}</span>
+              </mat-option>
+              <mat-option value="0">Manual Refresh</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>update</mat-icon>
+            <mat-hint>How often to refresh dashboard data</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Simulation Speed</mat-label>
+            <mat-select formControlName="simulationSpeed">
+              <mat-option *ngFor="let speed of simulationSpeeds" [value]="speed.value">
+                {{ speed.label }}
+                <span class="option-hint">{{ speed.description }}</span>
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>speed</mat-icon>
+            <mat-hint>Control simulation playback speed</mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>source</mat-icon>
+            Data Sources
+            <button mat-button color="primary" class="section-action" (click)="toggleAllDataSources(true)">
+              Enable All
+            </button>
+            <button mat-button color="warn" class="section-action" (click)="toggleAllDataSources(false)">
+              Disable All
+            </button>
+          </h3>
+          
+          <div class="data-sources-list">
+            <div *ngFor="let source of dataSourceControls; let i = index" class="data-source-item">
+              <div class="source-info">
+                <mat-checkbox [formControl]="source.get('enabled')" color="primary">
+                  {{ source.value.name }}
+                </mat-checkbox>
+                <p class="source-description">{{ source.value.description }}</p>
+              </div>
+              <div class="source-status">
+                <span class="status-badge" [class.connected]="source.value.enabled">
+                  {{ source.value.enabled ? 'Connected' : 'Disabled' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Alerts Tab -->
+    <mat-tab label="Alerts">
+      <div class="tab-content">
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>notifications</mat-icon>
+            Alert Preferences
+          </h3>
+          
+          <div class="toggle-grid">
+            <mat-slide-toggle formControlName="enableAlertSounds" color="primary">
+              Enable Alert Sounds
+            </mat-slide-toggle>
+            <p class="toggle-description">Play sounds for new alerts</p>
+            
+            <mat-slide-toggle formControlName="enableAlertPopup" color="primary">
+              Show Alert Popups
+            </mat-slide-toggle>
+            <p class="toggle-description">Display popup notifications for alerts</p>
+            
+            <mat-slide-toggle formControlName="enableEmailAlerts" color="primary">
+              Enable Email Alerts
+            </mat-slide-toggle>
+            <p class="toggle-description">Send alerts to email (for critical issues)</p>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Critical Alert Sound</mat-label>
+              <mat-select formControlName="criticalAlertSound">
+                <mat-option value="siren">Siren</mat-option>
+                <mat-option value="alarm">Alarm</mat-option>
+                <mat-option value="beep_urgent">Urgent Beep</mat-option>
+                <mat-option value="none">No Sound</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>volume_up</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Warning Alert Sound</mat-label>
+              <mat-select formControlName="warningAlertSound">
+                <mat-option value="beep">Beep</mat-option>
+                <mat-option value="chime">Chime</mat-option>
+                <mat-option value="notification">Notification</mat-option>
+                <mat-option value="none">No Sound</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>volume_down</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>warning</mat-icon>
+            Alert Types
+            <button mat-button color="primary" class="section-action" (click)="toggleAllAlerts(true)">
+              Enable All
+            </button>
+            <button mat-button color="warn" class="section-action" (click)="toggleAllAlerts(false)">
+              Disable All
+            </button>
+          </h3>
+          
+          <div class="alert-types-list">
+            <div *ngFor="let alert of alertTypeControls; let i = index" class="alert-type-item">
+              <div class="alert-type-header">
+                <mat-checkbox [formControl]="alert.get('enabled')" color="primary">
+                  {{ alert.value.name }}
+                </mat-checkbox>
+              </div>
+              
+              <div class="alert-type-options" [class.disabled]="!alert.get('enabled')?.value">
+                <mat-checkbox [formControl]="alert.get('sound')" color="primary">
+                  Sound
+                </mat-checkbox>
+                <mat-checkbox [formControl]="alert.get('popup')" color="primary">
+                  Popup
+                </mat-checkbox>
+                <mat-checkbox [formControl]="alert.get('email')" color="primary">
+                  Email
+                </mat-checkbox>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Performance Tab -->
+    <mat-tab label="Performance">
+      <div class="tab-content">
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>speed</mat-icon>
+            Performance Settings
+          </h3>
+          
+          <div class="toggle-grid">
+            <mat-slide-toggle formControlName="enableHardwareAcceleration" color="primary">
+              Hardware Acceleration
+            </mat-slide-toggle>
+            <p class="toggle-description">Use GPU acceleration for better performance</p>
+            
+            <mat-slide-toggle formControlName="enableWebGL" color="primary">
+              WebGL Rendering
+            </mat-slide-toggle>
+            <p class="toggle-description">Enable 3D visualization rendering</p>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Data Cache Size (MB)</mat-label>
+              <input matInput type="number" formControlName="dataCacheSize" min="10" max="1000">
+              <mat-icon matSuffix>memory</mat-icon>
+              <mat-hint>Amount of data to cache in memory</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Max Concurrent Requests</mat-label>
+              <input matInput type="number" formControlName="maxConcurrentRequests" min="1" max="50">
+              <mat-icon matSuffix>swap_horiz</mat-icon>
+              <mat-hint>Maximum simultaneous API requests</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">
+            <mat-icon>storage</mat-icon>
+            Data Management
+          </h3>
+          
+          <div class="performance-actions">
+            <button mat-raised-button color="primary" (click)="exportSettings()">
+              <mat-icon>download</mat-icon>
+              Export Settings
+            </button>
+            
+            <button mat-raised-button color="accent" (click)="document.getElementById('importSettings').click()">
+              <mat-icon>upload</mat-icon>
+              Import Settings
+            </button>
+            <input type="file" id="importSettings" style="display: none" accept=".json" (change)="importSettings($event)">
+            
+            <button mat-raised-button color="warn" (click)="resetToDefaults()">
+              <mat-icon>restore</mat-icon>
+              Reset to Defaults
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+  <!-- Dialog Actions -->
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <div class="action-left">
+      <span class="save-status" *ngIf="isSaving">
+        <mat-spinner diameter="20"></mat-spinner>
+        Saving settings...
+      </span>
+    </div>
+    
+    <div class="action-right">
+      <button mat-button (click)="cancel()">Cancel</button>
+      <button mat-raised-button color="primary" (click)="save()" [disabled]="isSaving">
+        <mat-icon>save</mat-icon>
+        Save Changes
+      </button>
+    </div>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,252 @@
+<div class="terminal-detail-dialog" [class.edit-mode]="editMode">
+    <!-- Dialog Header -->
+    <div class="dialog-header" [style.background]="getCrowdednessColor(data.terminal.crowdedness)">
+      <div class="header-content">
+        <mat-icon class="header-icon">apartment</mat-icon>
+        <div class="header-text">
+          <h2 mat-dialog-title>{{ data.terminal.terminal }} Details</h2>
+          <p class="header-subtitle">
+            <span class="crowdedness-badge">{{ data.terminal.crowdedness }}</span>
+            <span class="occupancy">• {{ getOccupancyPercentage() }}% Occupancy</span>
+          </p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button mat-icon-button (click)="exportTerminalReport()" matTooltip="Export Report">
+          <mat-icon>download</mat-icon>
+        </button>
+        <button mat-icon-button (click)="toggleEditMode()" matTooltip="Edit Mode">
+          <mat-icon>{{ editMode ? 'edit_off' : 'edit' }}</mat-icon>
+        </button>
+        <button mat-icon-button (click)="close()" matTooltip="Close">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+  
+    <!-- Dialog Content -->
+    <mat-dialog-content>
+      <div class="dialog-content">
+        <!-- Main Information -->
+        <div class="info-section">
+          <form [formGroup]="terminalForm" class="terminal-form">
+            <div class="form-grid">
+              <!-- Left Column -->
+              <div class="form-column">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Terminal Name</mat-label>
+                  <input matInput formControlName="terminal">
+                  <mat-icon matSuffix>apartment</mat-icon>
+                </mat-form-field>
+  
+                <div class="form-row">
+                  <mat-form-field appearance="outline" class="half-width">
+                    <mat-label>Passenger Count</mat-label>
+                    <input matInput type="number" formControlName="passengerCount">
+                    <mat-icon matSuffix>people</mat-icon>
+                  </mat-form-field>
+  
+                  <mat-form-field appearance="outline" class="half-width">
+                    <mat-label>Capacity</mat-label>
+                    <input matInput type="number" formControlName="capacity">
+                    <mat-icon matSuffix>meeting_room</mat-icon>
+                  </mat-form-field>
+                </div>
+  
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Crowdedness Level</mat-label>
+                  <mat-select formControlName="crowdedness">
+                    <mat-option value="Low">Low</mat-option>
+                    <mat-option value="Medium">Medium</mat-option>
+                    <mat-option value="High">High</mat-option>
+                    <mat-option value="Critical">Critical</mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>people</mat-icon>
+                </mat-form-field>
+  
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Operating Hours</mat-label>
+                  <input matInput formControlName="operatingHours">
+                  <mat-icon matSuffix>schedule</mat-icon>
+                </mat-form-field>
+              </div>
+  
+              <!-- Right Column - Wait Times -->
+              <div class="form-column">
+                <h3 class="section-title">Wait Times</h3>
+                
+                <div class="wait-time-display">
+                  <div class="wait-time-item" [style.borderColor]="getWaitTimeColor(terminalForm.get('securityWaitTime')?.value, 'security')">
+                    <div class="wait-time-header">
+                      <mat-icon>security</mat-icon>
+                      <span>Security</span>
+                    </div>
+                    <div class="wait-time-value">
+                      {{ terminalForm.get('securityWaitTime')?.value }} min
+                    </div>
+                    <div class="wait-time-status">
+                      {{ getWaitTimeStatus(terminalForm.get('securityWaitTime')?.value, 'security') }}
+                    </div>
+                    <mat-form-field appearance="outline" class="wait-time-input">
+                      <input matInput type="number" formControlName="securityWaitTime">
+                    </mat-form-field>
+                  </div>
+  
+                  <div class="wait-time-item" [style.borderColor]="getWaitTimeColor(terminalForm.get('baggageWaitTime')?.value, 'baggage')">
+                    <div class="wait-time-header">
+                      <mat-icon>luggage</mat-icon>
+                      <span>Baggage</span>
+                    </div>
+                    <div class="wait-time-value">
+                      {{ terminalForm.get('baggageWaitTime')?.value }} min
+                    </div>
+                    <div class="wait-time-status">
+                      {{ getWaitTimeStatus(terminalForm.get('baggageWaitTime')?.value, 'baggage') }}
+                    </div>
+                    <mat-form-field appearance="outline" class="wait-time-input">
+                      <input matInput type="number" formControlName="baggageWaitTime">
+                    </mat-form-field>
+                  </div>
+  
+                  <div class="wait-time-item" [style.borderColor]="getWaitTimeColor(terminalForm.get('checkinWaitTime')?.value, 'security')">
+                    <div class="wait-time-header">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>Check-in</span>
+                    </div>
+                    <div class="wait-time-value">
+                      {{ terminalForm.get('checkinWaitTime')?.value }} min
+                    </div>
+                    <div class="wait-time-status">
+                      {{ getWaitTimeStatus(terminalForm.get('checkinWaitTime')?.value, 'security') }}
+                    </div>
+                    <mat-form-field appearance="outline" class="wait-time-input">
+                      <input matInput type="number" formControlName="checkinWaitTime">
+                    </mat-form-field>
+                  </div>
+                </div>
+  
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Notes</mat-label>
+                  <textarea matInput formControlName="notes" rows="3" placeholder="Additional notes or comments..."></textarea>
+                  <mat-icon matSuffix>notes</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+          </form>
+        </div>
+  
+        <!-- Charts Section -->
+        <div class="charts-section">
+          <div class="chart-container">
+            <h3 class="section-title">
+              <mat-icon>timeline</mat-icon>
+              Passenger Flow (24h)
+            </h3>
+            <div class="chart-wrapper">
+              <canvas id="passengerFlowChart"></canvas>
+            </div>
+          </div>
+  
+          <div class="chart-container">
+            <h3 class="section-title">
+              <mat-icon>schedule</mat-icon>
+              Wait Time Trends
+            </h3>
+            <div class="chart-wrapper">
+              <canvas id="waitTimeChart"></canvas>
+            </div>
+          </div>
+  
+          <div class="chart-container">
+            <h3 class="section-title">
+              <mat-icon>pie_chart</mat-icon>
+              Area Occupancy
+            </h3>
+            <div class="chart-wrapper">
+              <canvas id="occupancyChart"></canvas>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Facilities & Staff -->
+        <div class="facilities-staff-section">
+          <div class="facilities-column">
+            <h3 class="section-title">
+              <mat-icon>business</mat-icon>
+              Facilities Status
+            </h3>
+            
+            <div class="facilities-grid">
+              <div *ngFor="let facility of facilities" class="facility-item" [class]="'status-' + facility.status">
+                <div class="facility-info">
+                  <div class="facility-name">{{ facility.name }}</div>
+                  <div class="facility-count">{{ facility.count }} units</div>
+                </div>
+                <div class="facility-status">
+                  <mat-icon *ngIf="facility.status === 'normal'">check_circle</mat-icon>
+                  <mat-icon *ngIf="facility.status === 'warning'">warning</mat-icon>
+                  <mat-icon *ngIf="facility.status === 'maintenance'">build</mat-icon>
+                  <span class="status-text">{{ facility.status }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="staff-column">
+            <h3 class="section-title">
+              <mat-icon>people</mat-icon>
+              Staff Coverage
+              <span class="staff-total">{{ staffInfo.total }} staff</span>
+            </h3>
+            
+            <div class="staff-list">
+              <div *ngFor="let dept of staffInfo.byDepartment" class="staff-item">
+                <div class="dept-header">
+                  <span class="dept-name">{{ dept.department }}</span>
+                  <span class="dept-count">{{ dept.count }}/{{ dept.required }}</span>
+                </div>
+                <div class="coverage-bar">
+                  <div class="coverage-fill" 
+                       [style.width.%]="getStaffCoverage(dept)"
+                       [style.background]="getStaffCoverageColor(dept)"></div>
+                </div>
+                <div class="coverage-percentage" [style.color]="getStaffCoverageColor(dept)">
+                  {{ getStaffCoverage(dept) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Recent Alerts -->
+        <div class="alerts-section">
+          <h3 class="section-title">
+            <mat-icon>notifications</mat-icon>
+            Recent Alerts
+          </h3>
+          
+          <div class="alerts-list">
+            <div *ngFor="let alert of recentAlerts" class="alert-item" [class]="'priority-' + alert.priority">
+              <div class="alert-time">{{ alert.time }}</div>
+              <div class="alert-type">{{ alert.type }}</div>
+              <div class="alert-message">{{ alert.message }}</div>
+              <div class="alert-priority">{{ alert.priority }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-dialog-content>
+  
+    <!-- Dialog Actions -->
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button (click)="close()">Cancel</button>
+      <button mat-raised-button color="primary" (click)="saveTerminal()" [disabled]="!terminalForm.valid || isLoading">
+        <mat-icon *ngIf="isLoading">
+          <mat-spinner diameter="20"></mat-spinner>
+        </mat-icon>
+        <span *ngIf="!isLoading">{{ editMode ? 'Save Changes' : 'Close' }}</span>
+        <span *ngIf="isLoading">Saving...</span>
+      </button>
+    </mat-dialog-actions>
+  </div>

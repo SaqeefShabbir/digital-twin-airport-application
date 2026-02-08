@@ -1,0 +1,329 @@
+<div class="bulk-operation-dialog">
+    <!-- Dialog Header -->
+    <div class="dialog-header">
+      <div class="header-content">
+        <mat-icon class="header-icon">playlist_add_check</mat-icon>
+        <div class="header-text">
+          <h2 mat-dialog-title>Bulk Gate Operations</h2>
+          <p class="header-subtitle">
+            Perform operations on {{ selectedGatesCount }} selected gate(s)
+          </p>
+        </div>
+      </div>
+      <button mat-icon-button class="close-button" (click)="cancel()" aria-label="Close">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  
+    <!-- Dialog Content -->
+    <mat-dialog-content>
+      <form [formGroup]="bulkForm" class="bulk-form">
+        <!-- Operation Selection -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <mat-icon>tune</mat-icon>
+            Operation Configuration
+          </h3>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Operation Type</mat-label>
+            <mat-select formControlName="operationType">
+              <mat-option *ngFor="let op of operationTypes" [value]="op.value">
+                <div class="operation-option">
+                  <mat-icon>{{ op.icon }}</mat-icon>
+                  <div class="option-text">
+                    <div class="option-title">{{ op.label }}</div>
+                    <div class="option-description">{{ op.description }}</div>
+                  </div>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>arrow_drop_down</mat-icon>
+          </mat-form-field>
+  
+          <!-- Operation Description -->
+          <div class="operation-description">
+            <mat-icon>{{ getOperationIcon() }}</mat-icon>
+            <span>{{ getOperationDescription() }}</span>
+          </div>
+        </div>
+  
+        <!-- Selected Gates Info -->
+        <div class="form-section gates-section">
+          <h3 class="section-title">
+            <mat-icon>gate</mat-icon>
+            Selected Gates
+            <span class="section-badge">{{ selectedGatesCount }} gates</span>
+          </h3>
+          
+          <div class="gates-preview">
+            <div class="gates-list">
+              <div *ngFor="let gate of getSelectedGatesPreview()" class="gate-preview-item">
+                <div class="gate-info">
+                  <span class="gate-number">{{ gate.gateNumber }}</span>
+                  <span class="gate-terminal">{{ gate.terminal }}</span>
+                </div>
+                <div class="gate-status" [style.color]="getStatusColor(gate.status)">
+                  <mat-icon>{{ getStatusIcon(gate.status) }}</mat-icon>
+                  <span>{{ gate.status }}</span>
+                </div>
+              </div>
+              
+              <div *ngIf="selectedGatesCount > 3" class="more-gates">
+                + {{ selectedGatesCount - 3 }} more gates
+              </div>
+            </div>
+            
+            <div class="gates-stats">
+              <div class="stat-item">
+                <div class="stat-label">Affected Terminals</div>
+                <div class="stat-value">{{ getAffectedTerminals().length }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Gates with Flights</div>
+                <div class="stat-value">{{ gateStats.withFlights }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Impact Level</div>
+                <div class="stat-value impact-level" [style.color]="getImpactLevelColor(getOperationImpactLevel())">
+                  <mat-icon>{{ getImpactLevelIcon(getOperationImpactLevel()) }}</mat-icon>
+                  {{ getOperationImpactLevel() | titlecase }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Operation Parameters -->
+        <div class="form-section parameters-section">
+          <h3 class="section-title">
+            <mat-icon>settings</mat-icon>
+            Operation Parameters
+          </h3>
+          
+          <!-- Status Change Parameters -->
+          <div *ngIf="bulkForm.get('operationType')?.value === 'status_change'" class="parameter-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>New Status</mat-label>
+              <mat-select formControlName="newStatus">
+                <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+                  <div class="status-option" [style.color]="status.color">
+                    <mat-icon>{{ status.icon }}</mat-icon>
+                    {{ status.label }}
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>swap_vert</mat-icon>
+            </mat-form-field>
+          </div>
+  
+          <!-- Maintenance Parameters -->
+          <div *ngIf="bulkForm.get('operationType')?.value === 'schedule_maintenance'" class="parameter-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Maintenance Reason</mat-label>
+              <mat-select formControlName="maintenanceReason">
+                <mat-option *ngFor="let reason of maintenanceReasons" [value]="reason">
+                  {{ reason }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matSuffix>warning</mat-icon>
+            </mat-form-field>
+  
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Maintenance Duration</mat-label>
+                <mat-select formControlName="maintenanceDuration">
+                  <mat-option *ngFor="let duration of maintenanceDurations" [value]="duration.value">
+                    {{ duration.label }}
+                  </mat-option>
+                </mat-select>
+                <mat-icon matSuffix>timer</mat-icon>
+              </mat-form-field>
+  
+              <div class="duration-display">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ getDurationLabel(bulkForm.get('maintenanceDuration')?.value) }}</span>
+              </div>
+            </div>
+  
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Maintenance Notes</mat-label>
+              <textarea matInput formControlName="maintenanceNotes" rows="2"
+                       placeholder="Additional details about the maintenance..."></textarea>
+              <mat-icon matSuffix>notes</mat-icon>
+            </mat-form-field>
+  
+            <mat-checkbox formControlName="scheduleImmediately" color="primary">
+              Schedule Immediately
+            </mat-checkbox>
+  
+            <mat-form-field *ngIf="!bulkForm.get('scheduleImmediately')?.value" appearance="outline" class="full-width">
+              <mat-label>Scheduled Date & Time</mat-label>
+              <input matInput type="datetime-local" formControlName="scheduledDateTime">
+              <mat-icon matSuffix>calendar_today</mat-icon>
+            </mat-form-field>
+          </div>
+  
+          <!-- Flight Assignment Parameters -->
+          <div *ngIf="bulkForm.get('operationType')?.value === 'assign_flight'" class="parameter-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Flight Number</mat-label>
+              <input matInput formControlName="flightNumber" placeholder="e.g., DL123">
+              <mat-icon matSuffix>flight</mat-icon>
+              <mat-hint>Start typing or select from available flights</mat-hint>
+            </mat-form-field>
+  
+            <div *ngIf="bulkForm.get('flightNumber')?.value" class="flight-auto-info">
+              <div class="flight-details">
+                <span class="airline">{{ bulkForm.get('airline')?.value }}</span>
+                <span class="destination">{{ bulkForm.get('destination')?.value }}</span>
+              </div>
+            </div>
+  
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Scheduled Time</mat-label>
+                <input matInput type="datetime-local" formControlName="scheduledTime">
+                <mat-icon matSuffix>schedule</mat-icon>
+              </mat-form-field>
+  
+              <mat-form-field appearance="outline" class="half-width">
+                <mat-label>Estimated Time</mat-label>
+                <input matInput type="datetime-local" formControlName="estimatedTime">
+                <mat-icon matSuffix>update</mat-icon>
+              </mat-form-field>
+            </div>
+  
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Flight Status</mat-label>
+              <mat-select formControlName="flightStatus">
+                <mat-option value="On Time">On Time</mat-option>
+                <mat-option value="Delayed">Delayed</mat-option>
+                <mat-option value="Boarding">Boarding</mat-option>
+                <mat-option value="Departed">Departed</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>flight_takeoff</mat-icon>
+            </mat-form-field>
+          </div>
+  
+          <!-- Next Flight Parameters -->
+          <div *ngIf="bulkForm.get('operationType')?.value === 'set_next_flight'" class="parameter-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Next Flight Number</mat-label>
+              <input matInput formControlName="nextFlightNumber" placeholder="e.g., AA456">
+              <mat-icon matSuffix>flight</mat-icon>
+            </mat-form-field>
+  
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Next Flight Time</mat-label>
+              <input matInput type="datetime-local" formControlName="nextFlightTime">
+              <mat-icon matSuffix>schedule</mat-icon>
+            </mat-form-field>
+          </div>
+  
+          <!-- Release/Notification Parameters -->
+          <div class="parameter-group">
+            <div class="toggle-group">
+              <mat-slide-toggle formControlName="sendNotification" color="primary">
+                Send Notification
+              </mat-slide-toggle>
+              <p class="toggle-description">Notify relevant teams about this operation</p>
+            </div>
+  
+            <mat-form-field *ngIf="bulkForm.get('sendNotification')?.value" appearance="outline" class="full-width">
+              <mat-label>Notify Teams</mat-label>
+              <mat-select formControlName="notifyTeams" multiple>
+                <mat-option value="operations">Operations Team</mat-option>
+                <mat-option value="maintenance">Maintenance Team</mat-option>
+                <mat-option value="security">Security Team</mat-option>
+                <mat-option value="airline_ops">Airline Operations</mat-option>
+                <mat-option value="ground_crew">Ground Crew</mat-option>
+              </mat-select>
+              <mat-icon matSuffix>notifications</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+  
+        <!-- Operation Summary -->
+        <div class="form-section summary-section">
+          <h3 class="section-title">
+            <mat-icon>summarize</mat-icon>
+            Operation Summary
+          </h3>
+          
+          <div class="summary-card">
+            <div class="summary-header">
+              <div class="summary-title">{{ getOperationSummary().operation }}</div>
+              <div class="summary-impact" [style.color]="getImpactLevelColor(getOperationImpactLevel())">
+                {{ getOperationImpactLevel() | uppercase }} IMPACT
+              </div>
+            </div>
+            
+            <div class="summary-content">
+              <div class="summary-row">
+                <span class="summary-label">Gates Affected:</span>
+                <span class="summary-value">{{ getOperationSummary().gatesAffected }} gates</span>
+              </div>
+              
+              <div class="summary-row">
+                <span class="summary-label">Affected Terminals:</span>
+                <span class="summary-value">{{ getAffectedTerminals().join(', ') }}</span>
+              </div>
+              
+              <div class="summary-row">
+                <span class="summary-label">Operation Impact:</span>
+                <span class="summary-value">{{ getOperationSummary().impact }}</span>
+              </div>
+              
+              <!-- Operation-specific parameters -->
+              <div *ngIf="getOperationSummary().parameters" class="summary-parameters">
+                <div class="parameters-title">Parameters:</div>
+                <div *ngFor="let key of objectKeys(getOperationSummary().parameters)" class="parameter-item">
+                  <span class="parameter-label">{{ key | titlecase }}:</span>
+                  <span class="parameter-value">{{ getOperationSummary().parameters[key] }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Notes & Confirmation -->
+        <div class="form-section confirmation-section">
+          <h3 class="section-title">
+            <mat-icon>verified</mat-icon>
+            Confirmation
+          </h3>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Operation Notes (Optional)</mat-label>
+            <textarea matInput formControlName="operationNotes" rows="2"
+                     placeholder="Add any notes or comments about this operation..."></textarea>
+            <mat-icon matSuffix>notes</mat-icon>
+          </mat-form-field>
+  
+          <div class="confirmation-checkbox">
+            <mat-checkbox formControlName="confirmation" color="primary">
+              I confirm that I want to perform this operation on {{ selectedGatesCount }} gate(s)
+            </mat-checkbox>
+            <p class="confirmation-hint">
+              This action will affect {{ formatGateList() }}. Please review the operation summary before confirming.
+            </p>
+          </div>
+        </div>
+      </form>
+    </mat-dialog-content>
+  
+    <!-- Dialog Actions -->
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button (click)="cancel()">Cancel</button>
+      <button mat-raised-button color="primary" 
+              (click)="executeOperation()" 
+              [disabled]="!bulkForm.valid || isLoading">
+        <mat-icon *ngIf="isLoading">
+          <mat-spinner diameter="20"></mat-spinner>
+        </mat-icon>
+        <span *ngIf="!isLoading">Execute Operation</span>
+        <span *ngIf="isLoading">Processing...</span>
+      </button>
+    </mat-dialog-actions>
+  </div>
