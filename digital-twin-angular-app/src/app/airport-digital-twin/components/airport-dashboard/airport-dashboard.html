@@ -77,13 +77,13 @@
   </header>
 
   <!-- Alert Banner -->
-  <div class="alert-banner" *ngIf="activeAlerts.length > 0" [class.critical]="activeAlerts.some(a => a.priority === 1)">
+  <div class="alert-banner" *ngIf="activeAlerts.length > 0" [class.critical]="hasCriticalAlerts()">
     <div class="alert-content">
       <mat-icon class="alert-icon">warning</mat-icon>
       <div class="alert-text">
         <strong>{{ activeAlerts.length }} active alert(s)</strong>
-        <span *ngIf="activeAlerts.some(a => a.priority === 1)" class="critical-text">
-          - {{ activeAlerts.filter(a => a.priority === 1).length }} critical
+        <span *ngIf="hasCriticalAlerts()" class="critical-text">
+          - {{ getCriticalAlertCount() }} critical
         </span>
       </div>
       <button mat-button color="warn" (click)="acknowledgeAllAlerts()">Acknowledge All</button>
@@ -218,7 +218,7 @@
                 </div>
               </div>
               <div class="terminal-progress">
-                <mat-progress-bar mode="determinate" [value]="getTerminalOccupancy(terminal)"></mat-progress-bar>
+                <mat-progress-bar mode="determinate" [value]="getTerminalOccupancy(terminal.terminal)"></mat-progress-bar>
               </div>
             </div>
           </div>

@@ -1,1 +1,237 @@
-<p>analytics works!</p>
+<div class="analytics-container">
+    <!-- Header Section -->
+    <div class="analytics-header">
+      <div class="header-content">
+        <h1>
+          <mat-icon class="header-icon">analytics</mat-icon>
+          Airport Operations Analytics
+        </h1>
+        <p class="subtitle">Real-time insights and performance metrics for airport digital twin</p>
+      </div>
+      
+      <div class="header-controls">
+        <!-- Time Period Selector -->
+        <div class="time-period-selector">
+          <mat-button-toggle-group [value]="selectedPeriod" (change)="onTimePeriodChange($event.value)">
+            <mat-button-toggle *ngFor="let period of timePeriods" [value]="period">
+              {{ period }}
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+        
+        <!-- Export Button -->
+        <button mat-raised-button color="primary" (click)="exportData()">
+          <mat-icon>download</mat-icon>
+          Export Data
+        </button>
+      </div>
+    </div>
+  
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <mat-card class="filter-card">
+        <div class="filter-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Terminal</mat-label>
+            <mat-select [(ngModel)]="filterOptions.terminal" (selectionChange)="onFilterChange()">
+              <mat-option value="All">All Terminals</mat-option>
+              <mat-option *ngFor="let terminal of passengerFlow" [value]="terminal.terminal">
+                {{ terminal.terminal }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline">
+            <mat-label>Airline</mat-label>
+            <mat-select [(ngModel)]="filterOptions.airline" (selectionChange)="onFilterChange()">
+              <mat-option value="All">All Airlines</mat-option>
+              <mat-option value="Delta">Delta</mat-option>
+              <mat-option value="American">American</mat-option>
+              <mat-option value="United">United</mat-option>
+              <mat-option value="Southwest">Southwest</mat-option>
+            </mat-select>
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline">
+            <mat-label>Flight Type</mat-label>
+            <mat-select [(ngModel)]="filterOptions.flightType" (selectionChange)="onFilterChange()">
+              <mat-option value="All">All Flights</mat-option>
+              <mat-option value="Domestic">Domestic</mat-option>
+              <mat-option value="International">International</mat-option>
+              <mat-option value="Cargo">Cargo</mat-option>
+            </mat-select>
+          </mat-form-field>
+          
+          <button mat-stroked-button (click)="onFilterChange()">
+            <mat-icon>filter_alt</mat-icon>
+            Apply Filters
+          </button>
+        </div>
+      </mat-card>
+    </div>
+  
+    <!-- KPI Metrics Grid -->
+    <div class="kpi-grid">
+      <mat-card *ngFor="let metric of airportMetrics" class="kpi-card">
+        <div class="kpi-content">
+          <div class="kpi-header">
+            <h3>{{ metric.name }}</h3>
+            <mat-icon [color]="getTrendColor(metric.trend)" class="trend-icon">
+              {{ getTrendIcon(metric.trend) }}
+            </mat-icon>
+          </div>
+          <div class="kpi-value">
+            <span class="value">{{ metric.value }}</span>
+            <span class="unit">{{ metric.unit }}</span>
+          </div>
+          <div class="kpi-change" [class.positive]="metric.change > 0" [class.negative]="metric.change < 0">
+            <mat-icon *ngIf="metric.change > 0">arrow_upward</mat-icon>
+            <mat-icon *ngIf="metric.change < 0">arrow_downward</mat-icon>
+            <mat-icon *ngIf="metric.change === 0">remove</mat-icon>
+            {{ metric.change > 0 ? '+' : '' }}{{ metric.change }}%
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  
+    <!-- Main Charts Section -->
+    <div class="charts-section">
+      <!-- Flight Operations Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>flight_takeoff</mat-icon>
+            Flight Operations
+          </mat-card-title>
+          <mat-card-subtitle>Arrivals, Departures, and Delays (24-hour period)</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas id="flightChart"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+  
+      <!-- Passenger Flow Chart -->
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>people</mat-icon>
+            Passenger Flow by Terminal
+          </mat-card-title>
+          <mat-card-subtitle>Current passengers vs terminal capacity</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas id="passengerChart"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  
+    <!-- Secondary Data Section -->
+    <div class="secondary-section">
+      <!-- Resource Utilization -->
+      <mat-card class="secondary-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>device_hub</mat-icon>
+            Resource Utilization
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas id="resourceChart"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+  
+      <!-- Weather Information -->
+      <mat-card class="secondary-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>{{ getWeatherIcon(weather.condition) }}</mat-icon>
+            Weather Conditions
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="weather-content">
+            <div class="weather-main">
+              <div class="temperature">
+                <span class="temp-value">{{ weather.temperature }}</span>
+                <span class="temp-unit">°C</span>
+              </div>
+              <div class="condition">{{ weather.condition | titlecase }}</div>
+            </div>
+            <div class="weather-details">
+              <div class="detail-item">
+                <mat-icon>air</mat-icon>
+                <span>Wind: {{ weather.windSpeed }} km/h</span>
+              </div>
+              <div class="detail-item">
+                <mat-icon>visibility</mat-icon>
+                <span>Visibility: {{ weather.visibility }} km</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+  
+      <!-- Alerts Panel -->
+      <mat-card class="secondary-card alerts-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>notifications</mat-icon>
+            System Alerts
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="alerts-list">
+            <div *ngFor="let alert of alerts" class="alert-item" [class]="alert.type">
+              <div class="alert-icon">
+                <mat-icon *ngIf="alert.type === 'warning'">warning</mat-icon>
+                <mat-icon *ngIf="alert.type === 'info'">info</mat-icon>
+                <mat-icon *ngIf="alert.type === 'success'">check_circle</mat-icon>
+              </div>
+              <div class="alert-content">
+                <p class="alert-message">{{ alert.message }}</p>
+                <span class="alert-time">{{ alert.time }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  
+    <!-- Data Summary -->
+    <div class="summary-section">
+    <mat-card class="summary-card">
+        <mat-card-header>
+        <mat-card-title>
+            <mat-icon>summarize</mat-icon>
+            Analytics Summary
+        </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+        <div class="summary-content">
+            <p>
+            Airport operations are currently running at 
+            <span class="highlight">{{ getOnTimePerformance() }}%</span> on-time performance with 
+            <span class="highlight">{{ getTotalFlights() }}</span> total flights processed today.
+            </p>
+            <p>
+            Passenger volume is at 
+            <span class="highlight">{{ getPassengerCapacityPercentage() }}%</span>
+            of total terminal capacity.
+            </p>
+            <p>
+            Security wait times have 
+            <span class="highlight" [class.positive]="getSecurityTrend() < 0" [class.negative]="getSecurityTrend() > 0">
+                {{ getSecurityTrendText() }}
+            </span>
+            by {{ getAbsoluteSecurityChange() }}% compared to yesterday.
+            </p>
+        </div>
+        </mat-card-content>
+    </mat-card>
+</div>

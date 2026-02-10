@@ -1,0 +1,494 @@
+<div class="control-panel-container">
+    <!-- Header -->
+    <div class="panel-header">
+      <div class="header-content">
+        <h1>
+          <mat-icon class="header-icon">dashboard</mat-icon>
+          Airport Control Panel
+        </h1>
+        <p class="subtitle">Central command and control interface for airport operations</p>
+      </div>
+      
+      <div class="header-controls">
+        <button mat-stroked-button (click)="exportCommandLogs()">
+          <mat-icon>download</mat-icon>
+          Export Logs
+        </button>
+        
+        <button mat-raised-button color="warn" (click)="toggleEmergencyPanel()">
+          <mat-icon>warning</mat-icon>
+          Emergency Protocols
+        </button>
+      </div>
+    </div>
+  
+    <!-- Statistics Overview -->
+    <div class="statistics-overview">
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon health" [class]="getSystemHealthStatus().color">
+            <mat-icon>{{ getSystemHealthStatus().icon }}</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.systemHealth }}%</div>
+            <div class="stat-label">System Health</div>
+            <div class="stat-subtext">{{ getSystemHealthStatus().status }}</div>
+          </div>
+        </div>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon success">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.successfulToday }}</div>
+            <div class="stat-label">Commands Today</div>
+            <div class="stat-subtext">Successful</div>
+          </div>
+        </div>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon warning">
+            <mat-icon>error</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.failedToday }}</div>
+            <div class="stat-label">Commands Today</div>
+            <div class="stat-subtext">Failed</div>
+          </div>
+        </div>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon response">
+            <mat-icon>schedule</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.avgResponseTime }}s</div>
+            <div class="stat-label">Avg Response</div>
+            <div class="stat-subtext">Command execution</div>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Left Panel: Command Categories -->
+      <mat-card class="categories-panel">
+        <mat-card-header>
+          <mat-card-title>Command Categories</mat-card-title>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="categories-list">
+            <div *ngFor="let category of categories" 
+                 class="category-item" 
+                 [class.active]="selectedCategory === category.id"
+                 (click)="selectedCategory = category.id">
+              <div class="category-icon">
+                <mat-icon>{{ category.icon }}</mat-icon>
+              </div>
+              <div class="category-info">
+                <div class="category-name">{{ category.name }}</div>
+                <div class="category-count">
+                  {{ category.id === 'all' ? commands.length : getCommandsByCategory(category.id).length }} commands
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+  
+      <!-- Center Panel: Command Grid -->
+      <mat-card class="commands-panel">
+        <mat-card-header>
+          <mat-card-title>
+            {{ getSelectedCategoryName() }}
+          </mat-card-title>
+          <button mat-stroked-button (click)="resetAllCommands()" color="primary">
+            <mat-icon>refresh</mat-icon>
+            Reset All
+          </button>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="commands-grid">
+            <mat-card *ngFor="let command of filteredCommands" class="command-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <mat-icon [color]="command.status === 'success' ? 'success' : command.status === 'failed' ? 'warn' : 'primary'">
+                    {{ getCategoryIcon(command.category) }}
+                  </mat-icon>
+                  {{ command.name }}
+                </mat-card-title>
+                <mat-card-subtitle>{{ command.description }}</mat-card-subtitle>
+                <div class="command-status" [class]="command.status">
+                  <div class="status-dot"></div>
+                  <span>{{ command.status | titlecase }}</span>
+                </div>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <!-- Toggle Type Command -->
+                <div *ngIf="command.type === 'toggle'" class="command-control">
+                  <mat-slide-toggle [checked]="command.currentValue" 
+                                    (change)="executeCommand(command)"
+                                    [disabled]="command.status === 'executing'">
+                    {{ command.currentValue ? 'ON' : 'OFF' }}
+                  </mat-slide-toggle>
+                  <div class="command-info">
+                    <mat-icon>schedule</mat-icon>
+                    <span *ngIf="command.lastExecuted">
+                      Last: {{ getTimeAgo(command.lastExecuted) }}
+                    </span>
+                  </div>
+                </div>
+  
+                <!-- Value Type Command -->
+                <div *ngIf="command.type === 'value'" class="command-control">
+                  <div class="value-control">
+                    <mat-slider 
+                        [(ngModel)]="command.currentValue"
+                        [min]="command.minValue" 
+                        [max]="command.maxValue" 
+                        [step]="command.step"
+                        [disabled]="command.status === 'executing'"
+                        (change)="executeCommand(command, command.currentValue)">
+                    </mat-slider>
+                    <div class="value-display">
+                      <span class="value">{{ command.currentValue }}</span>
+                      <span class="unit" *ngIf="command.unit">{{ command.unit }}</span>
+                    </div>
+                  </div>
+                  <div class="command-range">
+                    <span>{{ command.minValue }}</span>
+                    <span>{{ command.maxValue }}</span>
+                  </div>
+                </div>
+  
+                <!-- Action Type Command -->
+                <div *ngIf="command.type === 'action'" class="command-control">
+                  <button mat-raised-button 
+                          color="primary" 
+                          (click)="executeCommand(command)"
+                          [disabled]="command.status === 'executing'">
+                    <mat-icon>play_arrow</mat-icon>
+                    Execute
+                  </button>
+                  <div class="command-info" *ngIf="command.requiresConfirmation">
+                    <mat-icon>verified_user</mat-icon>
+                    <span>Requires confirmation</span>
+                  </div>
+                </div>
+              </mat-card-content>
+              
+              <!-- Progress bar for executing commands -->
+              <mat-progress-bar *ngIf="command.status === 'executing'" mode="determinate" [value]="commandProgress">
+              </mat-progress-bar>
+            </mat-card>
+          </div>
+        </mat-card-content>
+      </mat-card>
+  
+      <!-- Right Panel: System Status -->
+      <mat-card class="status-panel">
+        <mat-card-header>
+          <mat-card-title>System Status</mat-card-title>
+          <button mat-icon-button (click)="startSystemStatusSimulation()" matTooltip="Refresh Status">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="systems-list">
+            <div *ngFor="let system of systemStatuses" 
+                 class="system-item" 
+                 [class.critical]="system.critical"
+                 (click)="showSystemDetailsDialog(system)">
+              <div class="system-info">
+                <div class="system-name">{{ system.name }}</div>
+                <div class="system-meta">
+                  <span class="uptime">{{ formatUptime(system.uptime) }} uptime</span>
+                  <span class="response">{{ formatResponseTime(system.responseTime) }}</span>
+                </div>
+              </div>
+              
+              <div class="system-status">
+                <mat-chip [color]="getStatusColor(system.status)" selected>
+                  <mat-icon>{{ getStatusIcon(system.status) }}</mat-icon>
+                  {{ system.status | titlecase }}
+                </mat-chip>
+                <div class="last-check">
+                  {{ getTimeAgo(system.lastCheck) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  
+    <!-- Quick Actions Bar -->
+    <mat-card class="quick-actions">
+      <mat-card-content>
+        <div class="actions-title">Quick Actions</div>
+        <div class="actions-grid">
+          <button mat-stroked-button (click)="executeQuickAction('lights_on')">
+            <mat-icon>lightbulb</mat-icon>
+            Lights On
+          </button>
+          <button mat-stroked-button (click)="executeQuickAction('lights_off')">
+            <mat-icon>lightbulb_outline</mat-icon>
+            Lights Off
+          </button>
+          <button mat-stroked-button color="warn" (click)="executeQuickAction('emergency_lights')">
+            <mat-icon>warning</mat-icon>
+            Emergency Lights
+          </button>
+          <button mat-stroked-button (click)="executeQuickAction('all_systems_check')">
+            <mat-icon>search</mat-icon>
+            System Check
+          </button>
+          <button mat-stroked-button (click)="requestNotificationPermission()" 
+                  *ngIf="'Notification' in windowRef && windowRef.Notification.permission === 'default'">
+            <mat-icon>notifications</mat-icon>
+            Enable Notifs
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  
+    <!-- Custom Command Panel -->
+    <mat-card class="custom-command-panel">
+      <mat-card-header>
+        <mat-card-title>Custom Command</mat-card-title>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <form [formGroup]="commandForm" (ngSubmit)="sendCustomCommand()">
+          <div class="custom-command-form">
+            <mat-form-field appearance="outline">
+              <mat-label>Command</mat-label>
+              <input matInput formControlName="customCommand" placeholder="Enter command...">
+              <mat-icon matPrefix>keyboard</mat-icon>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>Target System</mat-label>
+              <mat-select formControlName="targetSystem">
+                <mat-option value="airfield">Airfield Systems</mat-option>
+                <mat-option value="terminal">Terminal Systems</mat-option>
+                <mat-option value="security">Security Systems</mat-option>
+                <mat-option value="baggage">Baggage Systems</mat-option>
+                <mat-option value="operations">Operations</mat-option>
+              </mat-select>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>Command Type</mat-label>
+              <mat-select formControlName="commandType">
+                <mat-option value="action">Action</mat-option>
+                <mat-option value="toggle">Toggle</mat-option>
+                <mat-option value="value">Value Adjustment</mat-option>
+                <mat-option value="schedule">Scheduled</mat-option>
+              </mat-select>
+            </mat-form-field>
+            
+            <div class="form-options">
+              <mat-slide-toggle formControlName="requireApproval" color="primary">
+                Require Approval
+              </mat-slide-toggle>
+              
+              <button mat-raised-button color="primary" type="submit" [disabled]="!commandForm.valid">
+                <mat-icon>send</mat-icon>
+                Send Command
+              </button>
+            </div>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  
+    <!-- Emergency Protocols Panel -->
+    <div class="emergency-panel-overlay" *ngIf="showEmergencyPanel">
+      <mat-card class="emergency-panel">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon color="warn">warning</mat-icon>
+            Emergency Protocols
+          </mat-card-title>
+          <button mat-icon-button (click)="toggleEmergencyPanel()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="emergency-warning">
+            <mat-icon>warning</mat-icon>
+            <p>Emergency protocols should only be activated in genuine emergency situations.</p>
+          </div>
+          
+          <div class="protocols-grid">
+            <mat-card *ngFor="let protocol of emergencyProtocols" class="protocol-card">
+              <mat-card-header>
+                <mat-card-title>{{ protocol.name }}</mat-card-title>
+                <mat-chip [color]="getSeverityColor(protocol.severity)" selected>
+                  {{ protocol.severity | titlecase }}
+                </mat-chip>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <p class="protocol-description">{{ protocol.description }}</p>
+                
+                <div class="protocol-details">
+                  <div class="detail-item">
+                    <mat-icon>schedule</mat-icon>
+                    <span>{{ protocol.estimatedTime }} minutes</span>
+                  </div>
+                  <div class="detail-item">
+                    <mat-icon>people</mat-icon>
+                    <span>{{ protocol.assignedTeam }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <mat-icon>list</mat-icon>
+                    <span>{{ protocol.steps.length }} steps</span>
+                  </div>
+                </div>
+                
+                <mat-divider></mat-divider>
+                
+                <div class="protocol-steps">
+                  <h4>Steps:</h4>
+                  <ol>
+                    <li *ngFor="let step of protocol.steps">{{ step }}</li>
+                  </ol>
+                </div>
+              </mat-card-content>
+              
+              <mat-card-actions align="end">
+                <button mat-raised-button 
+                        color="warn" 
+                        (click)="activateEmergencyProtocol(protocol)"
+                        [disabled]="protocol.status === 'active'">
+                  <mat-icon>power_settings_new</mat-icon>
+                  {{ protocol.status === 'active' ? 'Activated' : 'Activate Protocol' }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  
+    <!-- Command Confirmation Dialog -->
+    <div class="confirmation-overlay" *ngIf="commandConfirmationOpen && activeCommand">
+      <mat-card class="confirmation-dialog">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon color="warn">verified_user</mat-icon>
+            Confirm Command Execution
+          </mat-card-title>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="confirmation-content">
+            <mat-icon class="warning-icon">warning</mat-icon>
+            
+            <div class="confirmation-details">
+              <h3>{{ activeCommand.name }}</h3>
+              <p>{{ activeCommand.description }}</p>
+              
+              <div *ngIf="activeCommand.targetValue !== undefined" class="value-change">
+                <span>Current: {{ activeCommand.currentValue }}</span>
+                <mat-icon>arrow_forward</mat-icon>
+                <span>Target: {{ activeCommand.targetValue }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="confirmation-actions">
+            <button mat-button (click)="cancelCommandExecution()">
+              Cancel
+            </button>
+            <button mat-raised-button color="primary" (click)="confirmCommandExecution()">
+              Confirm & Execute
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  
+    <!-- System Details Dialog -->
+    <div class="system-details-overlay" *ngIf="showSystemDetails && selectedSystem">
+      <mat-card class="system-details-dialog">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon [color]="getStatusColor(selectedSystem.status)">{{ getStatusIcon(selectedSystem.status) }}</mat-icon>
+            {{ selectedSystem.name }} Details
+          </mat-card-title>
+          <button mat-icon-button (click)="closeSystemDetails()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="system-details-grid">
+            <div class="detail-item">
+              <div class="detail-label">Status</div>
+              <div class="detail-value">
+                <mat-chip [color]="getStatusColor(selectedSystem.status)" selected>
+                  {{ selectedSystem.status | titlecase }}
+                </mat-chip>
+              </div>
+            </div>
+            
+            <div class="detail-item">
+              <div class="detail-label">Uptime</div>
+              <div class="detail-value">{{ formatUptime(selectedSystem.uptime) }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <div class="detail-label">Response Time</div>
+              <div class="detail-value">{{ formatResponseTime(selectedSystem.responseTime) }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <div class="detail-label">Last Check</div>
+              <div class="detail-value">{{ selectedSystem.lastCheck | date:'medium' }}</div>
+            </div>
+            
+            <div class="detail-item">
+              <div class="detail-label">Critical System</div>
+              <div class="detail-value">
+                <mat-icon [color]="selectedSystem.critical ? 'warn' : 'primary'">
+                  {{ selectedSystem.critical ? 'warning' : 'check' }}
+                </mat-icon>
+                {{ selectedSystem.critical ? 'Yes' : 'No' }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="system-actions">
+            <button mat-stroked-button>
+              <mat-icon>refresh</mat-icon>
+              Run Diagnostics
+            </button>
+            <button mat-stroked-button>
+              <mat-icon>history</mat-icon>
+              View Logs
+            </button>
+            <button mat-stroked-button [color]="selectedSystem.status === 'offline' ? 'primary' : 'warn'">
+              <mat-icon>power_settings_new</mat-icon>
+              {{ selectedSystem.status === 'offline' ? 'Start System' : 'Restart System' }}
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>

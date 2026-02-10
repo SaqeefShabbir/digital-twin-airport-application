@@ -4,9 +4,11 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
@@ -21,6 +23,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 
 import { AirportDashboard } from './components/airport-dashboard/airport-dashboard';
 import { TerminalView } from './components/terminal-view/terminal-view';
@@ -35,6 +39,10 @@ import { PassengerFlow } from './components/passenger-flow/passenger-flow';
 import { ResourceManagement } from './components/resource-management/resource-management';
 import { WeatherIntegration } from './components/weather-integration/weather-integration';
 import { Analytics } from './components/analytics/analytics';
+import { ThreeDVisualization } from './components/three-d-visualization/three-d-visualization';
+import { AlertSystem } from './components/alert-system/alert-system';
+import { ControlPanel } from './components/control-panel/control-panel';
+import { Settings } from './components/settings/settings';
 // import { GateManagementComponent } from './components/gate-management/gate-management.component';
 // import { FlightOperationsComponent } from './components/flight-operations/flight-operations.component';
 // import { PassengerFlowComponent } from './components/passenger-flow/passenger-flow.component';
@@ -70,7 +78,11 @@ import { Analytics } from './components/analytics/analytics';
     PassengerFlow,
     ResourceManagement,
     WeatherIntegration,
-    Analytics
+    Analytics,
+    ThreeDVisualization,
+    AlertSystem,
+    ControlPanel,
+    Settings
   ],
   imports: [
     CommonModule,
@@ -79,15 +91,18 @@ import { Analytics } from './components/analytics/analytics';
     RouterModule,
     MatCardModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
     MatTabsModule,
     MatProgressSpinnerModule,
+    MatMenuModule,
     MatDialogModule,
     MatSelectModule,
     MatInputModule,
     MatFormFieldModule,
     MatDatepickerModule,
     MatNativeDateModule,
+    MatDividerModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
@@ -95,7 +110,8 @@ import { Analytics } from './components/analytics/analytics';
     MatExpansionModule,
     MatChipsModule,
     MatSlideToggleModule,
-    MatSliderModule
+    MatSliderModule,
+    MatProgressBarModule
   ],
   exports: [
     AirportDashboard

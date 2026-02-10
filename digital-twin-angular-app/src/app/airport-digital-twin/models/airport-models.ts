@@ -157,6 +157,7 @@
     requiresAcknowledgement: boolean;
     autoEscalate: boolean;
     resolved: boolean;
+    category: string;
   }
   
   export interface WeatherData {

@@ -33,7 +33,7 @@
         <!-- Terminal Selector -->
         <mat-form-field appearance="outline" class="terminal-selector">
           <mat-label>Select Terminal</mat-label>
-          <mat-select [formControl]="filterForm.get('terminal')" (selectionChange)="onTerminalSelect($event.value)">
+          <mat-select [formControl]="getFilterFormControls(filterForm, 'terminal')" (selectionChange)="onTerminalSelect($event.value)">
             <mat-option value="all">All Terminals</mat-option>
             <mat-option *ngFor="let terminal of terminals" [value]="terminal.id">
               {{ terminal.terminal }}
@@ -124,8 +124,7 @@
             </div>
             <div class="density-control">
               <span>Passenger Density:</span>
-              <mat-slider [max]="1" [min]="0.1" [step]="0.1" [value]="passengerDensity"
-                         (input)="passengerDensity = $event.value!">
+              <mat-slider [max]="1" [min]="0.1" [step]="0.1" [(ngModel)]="passengerDensity">
                 <input matSliderThumb>
               </mat-slider>
             </div>

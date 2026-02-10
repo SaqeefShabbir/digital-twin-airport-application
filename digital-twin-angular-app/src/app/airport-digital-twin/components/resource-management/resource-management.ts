@@ -2,12 +2,14 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } fr
 import { Subscription, interval, BehaviorSubject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
+type ResourceStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'RESERVED' | 'UNAVAILABLE';
+
 export interface AirportResource {
   id: string;
   name: string;
   type: 'GATE' | 'EQUIPMENT' | 'VEHICLE' | 'STAFF' | 'FACILITY' | 'UTILITY';
   category: string;
-  status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'RESERVED' | 'UNAVAILABLE';
+  status: ResourceStatus;
   location?: string;
   terminal?: string;
   capacity?: number;
@@ -308,6 +310,11 @@ export class ResourceManagement implements OnInit, OnDestroy, AfterViewInit {
         lastUpdated: new Date()
       });
     }
+  }
+
+  getResourceName(index: string): string {
+    const resource = this.resources.find(r => r.id === index);
+    return resource?.name || 'Unknown Resource';
   }
   
   private generateMockAllocations(): void {
@@ -669,7 +676,23 @@ export class ResourceManagement implements OnInit, OnDestroy, AfterViewInit {
       canvas.height = 400;
     }
   }
-  
+
+  getAvailableStaffCountByDeptAndStatus(department: string, status: StaffResource['status']): number {
+    return this.staffResources.filter(s => s.department === department && s.status === status).length;
+  }
+
+  getTotalStaffCountByDeptartment(department: string): number {
+    return this.staffResources.filter(s => s.department === department).length;
+  }
+
+  getActiveAllocations(limit: number): ResourceAllocation[] {
+    return this.allocations.filter(a => a.endTime === null).slice(0, limit);
+  }
+
+  getResourceCountByStatus(status: string): number {
+    return this.resources.filter(r => r.status === status).length;
+  }
+
   private updateResourceChart(): void {
     if (!this.chartContext || !this.utilizationStats.length) return;
     
@@ -748,7 +771,7 @@ export class ResourceManagement implements OnInit, OnDestroy, AfterViewInit {
     ctx.fillText('Resource Utilization by Type', width / 2, padding - 10);
   }
   
-  private updateTimeline(): void {
+  public updateTimeline(): void {
     if (!this.timelineContext || !this.allocations.length) return;
     
     const canvas = this.timelineCanvas.nativeElement;

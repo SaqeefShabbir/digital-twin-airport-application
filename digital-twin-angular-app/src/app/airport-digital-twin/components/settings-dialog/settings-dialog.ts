@@ -1,6 +1,6 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { FormBuilder, FormGroup, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, AbstractControl, FormControl } from '@angular/forms';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 export interface SettingsDialogData {
@@ -26,6 +26,8 @@ export class SettingsDialog implements OnInit {
   settingsForm: FormGroup;
   activeTabIndex = 0;
   isSaving = false;
+
+  @ViewChild('importSettings', { static: false }) importFileInput!: ElementRef;
   
   // Layout Options
   layouts = [
@@ -89,7 +91,7 @@ export class SettingsDialog implements OnInit {
   
   constructor(
     private fb: FormBuilder,
-    public dialogRef: MatDialogRef<SettingsDialogComponent>,
+    public dialogRef: MatDialogRef<SettingsDialog>,
     @Inject(MAT_DIALOG_DATA) public data: SettingsDialogData
   ) {
     this.settingsForm = this.fb.group({
@@ -152,12 +154,12 @@ export class SettingsDialog implements OnInit {
     const alertTypesArray = this.settingsForm.get('alertTypes') as FormArray;
     this.alertTypes.forEach(alert => {
       alertTypesArray.push(this.fb.group({
-        id: [alert.id],
-        name: [alert.name],
-        enabled: [alert.enabled],
-        sound: [alert.sound],
-        popup: [alert.popup],
-        email: [alert.email]
+        id: [alert.id || ''],
+        name: [alert.name || ''],
+        enabled: [alert.enabled ?? false],
+        sound: [alert.sound ?? false],
+        popup: [alert.popup ?? false],
+        email: [alert.email ?? false]
       }));
     });
   }
@@ -170,6 +172,20 @@ export class SettingsDialog implements OnInit {
     return (this.settingsForm.get('alertTypes') as FormArray).controls;
   }
   
+  getSourceControls(source: AbstractControl, field: string): FormControl {
+    return (source as FormGroup).get(field) as FormControl;
+  }
+
+  getAlertTypeControls(alert: AbstractControl, field: string): FormControl {
+    return (alert as FormGroup).get(field) as FormControl;
+  }
+
+  triggerFileInput(): void {
+    if (this.importFileInput && this.importFileInput.nativeElement) {
+      this.importFileInput.nativeElement.click();
+    }
+  }
+
   toggleAllDataSources(enable: boolean): void {
     const dataSourcesArray = this.settingsForm.get('dataSources') as FormArray;
     dataSourcesArray.controls.forEach(control => {

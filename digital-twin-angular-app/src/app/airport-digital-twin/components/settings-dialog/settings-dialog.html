@@ -201,7 +201,7 @@
           <div class="data-sources-list">
             <div *ngFor="let source of dataSourceControls; let i = index" class="data-source-item">
               <div class="source-info">
-                <mat-checkbox [formControl]="source.get('enabled')" color="primary">
+                <mat-checkbox [formControl]="getSourceControls(source, 'enabled')" color="primary">
                   {{ source.value.name }}
                 </mat-checkbox>
                 <p class="source-description">{{ source.value.description }}</p>
@@ -283,19 +283,19 @@
           <div class="alert-types-list">
             <div *ngFor="let alert of alertTypeControls; let i = index" class="alert-type-item">
               <div class="alert-type-header">
-                <mat-checkbox [formControl]="alert.get('enabled')" color="primary">
+                <mat-checkbox [formControl]="getAlertTypeControls(alert, 'enabled')" color="primary">
                   {{ alert.value.name }}
                 </mat-checkbox>
               </div>
               
-              <div class="alert-type-options" [class.disabled]="!alert.get('enabled')?.value">
-                <mat-checkbox [formControl]="alert.get('sound')" color="primary">
+              <div class="alert-type-options" [class.disabled]="!getAlertTypeControls(alert, 'enabled').value">
+                <mat-checkbox [formControl]="getAlertTypeControls(alert, 'sound')" color="primary">
                   Sound
                 </mat-checkbox>
-                <mat-checkbox [formControl]="alert.get('popup')" color="primary">
+                <mat-checkbox [formControl]="getAlertTypeControls(alert, 'popup')" color="primary">
                   Popup
                 </mat-checkbox>
-                <mat-checkbox [formControl]="alert.get('email')" color="primary">
+                <mat-checkbox [formControl]="getAlertTypeControls(alert, 'email')" color="primary">
                   Email
                 </mat-checkbox>
               </div>
@@ -355,7 +355,7 @@
               Export Settings
             </button>
             
-            <button mat-raised-button color="accent" (click)="document.getElementById('importSettings').click()">
+            <button mat-raised-button color="accent" (click)="triggerFileInput()">
               <mat-icon>upload</mat-icon>
               Import Settings
             </button>

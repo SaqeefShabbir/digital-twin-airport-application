@@ -194,6 +194,19 @@ export class AirportDashboard implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  hasCriticalAlerts(): boolean {
+    return this.activeAlerts.some(alert => alert.priority === 1);
+  }
+
+  getCriticalAlertCount(): number {
+    return this.activeAlerts.filter(alert => alert.priority === 1).length;
+  }
+
+  getTerminalOccupancy(terminalId: string): number {
+    const terminal = this.terminalStatus.find(t => t.id === terminalId);
+    return terminal ? terminal.passengerCount : 0;
+  }
+
   updatePerformanceMetrics(): void {
     // Simulate system performance metrics
     this.systemPerformance = {

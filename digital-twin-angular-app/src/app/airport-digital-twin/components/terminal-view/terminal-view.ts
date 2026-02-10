@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription, interval, timer } from 'rxjs';
@@ -480,6 +480,10 @@ export class TerminalView implements OnInit, AfterViewInit, OnDestroy {
   
   onViewModeChange(mode: 'overview' | 'detailed' | '3d'): void {
     this.viewMode = mode;
+  }
+
+  getFilterFormControls(filter: AbstractControl, field: string): FormControl {
+    return (filter as FormGroup).get(field) as FormControl;
   }
   
   onCanvasClick(event: MouseEvent): void {

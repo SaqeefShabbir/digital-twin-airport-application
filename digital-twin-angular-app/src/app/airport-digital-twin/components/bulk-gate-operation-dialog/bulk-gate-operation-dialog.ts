@@ -160,7 +160,7 @@ export class BulkGateOperationDialog implements OnInit {
   constructor(
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
-    public dialogRef: MatDialogRef<BulkGateOperationDialogComponent>,
+    public dialogRef: MatDialogRef<BulkGateOperationDialog>,
     @Inject(MAT_DIALOG_DATA) public data: BulkOperationDialogData
   ) {
     this.selectedGatesCount = data.gates.length;
@@ -220,6 +220,10 @@ export class BulkGateOperationDialog implements OnInit {
     this.bulkForm.get('flightNumber')?.valueChanges.subscribe(flightNumber => {
       this.autoFillFlightInfo(flightNumber);
     });
+  }
+
+  objectKeys(obj: any): string[] {
+    return Object.keys(obj);
   }
 
   updateFormValidation(): void {

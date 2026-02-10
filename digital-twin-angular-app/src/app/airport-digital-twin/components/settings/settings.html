@@ -1,0 +1,819 @@
+<div class="settings-container">
+    <!-- Header -->
+    <div class="settings-header">
+      <div class="header-content">
+        <h1>
+          <mat-icon class="header-icon">settings</mat-icon>
+          System Settings
+        </h1>
+        <p class="subtitle">Configure airport digital twin system preferences and options</p>
+      </div>
+      
+      <div class="header-actions">
+        <button mat-stroked-button (click)="exportSettings()" [disabled]="exportInProgress">
+          <mat-icon>download</mat-icon>
+          {{ exportInProgress ? 'Exporting...' : 'Export Settings' }}
+        </button>
+        
+        <button mat-stroked-button (click)="triggerFileInput()">
+          <mat-icon>upload</mat-icon>
+          Import Settings
+          <input type="file" #importFile accept=".json" (change)="importSettings($event)" hidden>
+        </button>
+        
+        <button mat-raised-button color="primary" (click)="saveSettings()" [disabled]="isSaving">
+          <mat-icon>{{ isSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
+          {{ isSaving ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  
+    <!-- Settings Navigation -->
+    <div class="settings-navigation">
+      <nav mat-tab-nav-bar>
+        <a mat-tab-link 
+           *ngFor="let tab of ['general', 'notifications', 'users', 'system', 'backup', 'api', 'advanced']" 
+           [active]="activeTab === tab" 
+           (click)="setActiveTab(tab)">
+          <mat-icon>{{ getTabIcon(tab) }}</mat-icon>
+          {{ getTabLabel(tab) }}
+        </a>
+      </nav>
+    </div>
+  
+    <!-- Settings Content -->
+    <div class="settings-content">
+      <form [formGroup]="settingsForm">
+        
+        <!-- General Settings -->
+        <div *ngIf="activeTab === 'general'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>settings_applications</mat-icon>
+            General Settings
+          </h2>
+          
+          <mat-card class="settings-card">
+            <mat-card-content>
+              <div class="settings-grid">
+                <!-- Airport Information -->
+                <div class="setting-group">
+                  <h3>Airport Information</h3>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Airport Name</mat-label>
+                    <input matInput formControlName="airportName" placeholder="Enter airport name">
+                    <mat-icon matPrefix>airport_shuttle</mat-icon>
+                    <mat-error *ngIf="generalFormGroup.get('airportName')?.hasError('required')">
+                      Airport name is required
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Airport Code (IATA)</mat-label>
+                    <input matInput formControlName="airportCode" placeholder="e.g., INT" maxlength="3" uppercase>
+                    <mat-icon matPrefix>code</mat-icon>
+                    <mat-error *ngIf="generalFormGroup.get('airportCode')?.hasError('required')">
+                      Airport code is required
+                    </mat-error>
+                    <mat-error *ngIf="generalFormGroup.get('airportCode')?.hasError('maxlength')">
+                      Airport code must be 3 characters
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+                
+                <!-- Regional Settings -->
+                <div class="setting-group">
+                  <h3>Regional Settings</h3>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Timezone</mat-label>
+                    <mat-select formControlName="timezone">
+                      <mat-option value="UTC">UTC (Coordinated Universal Time)</mat-option>
+                      <mat-option value="EST">Eastern Time (EST)</mat-option>
+                      <mat-option value="CST">Central Time (CST)</mat-option>
+                      <mat-option value="MST">Mountain Time (MST)</mat-option>
+                      <mat-option value="PST">Pacific Time (PST)</mat-option>
+                      <mat-option value="GMT">London (GMT)</mat-option>
+                      <mat-option value="CET">Central European Time (CET)</mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>schedule</mat-icon>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Language</mat-label>
+                    <mat-select formControlName="language">
+                      <mat-option value="en">English</mat-option>
+                      <mat-option value="es">Spanish</mat-option>
+                      <mat-option value="fr">French</mat-option>
+                      <mat-option value="de">German</mat-option>
+                      <mat-option value="ja">Japanese</mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>language</mat-icon>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Date Format</mat-label>
+                    <mat-select formControlName="dateFormat">
+                      <mat-option value="MM/DD/YYYY">MM/DD/YYYY</mat-option>
+                      <mat-option value="DD/MM/YYYY">DD/MM/YYYY</mat-option>
+                      <mat-option value="YYYY-MM-DD">YYYY-MM-DD</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Time Format</mat-label>
+                    <mat-select formControlName="timeFormat">
+                      <mat-option value="12h">12-hour</mat-option>
+                      <mat-option value="24h">24-hour</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                
+                <!-- System Information -->
+                <div class="setting-group">
+                  <h3>System Information</h3>
+                  <div class="system-info-display">
+                    <div class="info-item">
+                      <mat-icon>info</mat-icon>
+                      <div class="info-content">
+                        <div class="info-label">Version</div>
+                        <div class="info-value">{{ systemInfo.version }}</div>
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <mat-icon>update</mat-icon>
+                      <div class="info-content">
+                        <div class="info-label">Last Update</div>
+                        <div class="info-value">{{ formatDate(systemInfo.lastUpdate) }}</div>
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <mat-icon>timer</mat-icon>
+                      <div class="info-content">
+                        <div class="info-label">Uptime</div>
+                        <div class="info-value">{{ systemInfo.uptime }}</div>
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <mat-icon>storage</mat-icon>
+                      <div class="info-content">
+                        <div class="info-label">Database Size</div>
+                        <div class="info-value">{{ systemInfo.databaseSize }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+  
+        <!-- Notification Settings -->
+        <div *ngIf="activeTab === 'notifications'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>notifications</mat-icon>
+            Notification Settings
+          </h2>
+          
+          <div class="settings-grid">
+            <!-- Notification Preferences -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>Notification Preferences</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div formGroupName="notifications" class="notification-preferences">
+                  <mat-slide-toggle formControlName="quietHoursEnabled" color="primary">
+                    Enable Quiet Hours
+                  </mat-slide-toggle>
+                  
+                  <div *ngIf="notificationsFormGroup.get('quietHoursEnabled')?.value" class="quiet-hours-settings">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Start Time</mat-label>
+                      <input matInput formControlName="quietHoursStart" type="time">
+                    </mat-form-field>
+                    
+                    <mat-form-field appearance="outline">
+                      <mat-label>End Time</mat-label>
+                      <input matInput formControlName="quietHoursEnd" type="time">
+                    </mat-form-field>
+                  </div>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Max Notifications Per Hour</mat-label>
+                    <input matInput formControlName="maxNotificationsPerHour" type="number">
+                    <mat-error *ngIf="notificationsFormGroup.get('maxNotificationsPerHour')?.hasError('min')">
+                      Minimum 1 notification per hour
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <div class="volume-control">
+                    <label>Sound Volume</label>
+                    <mat-slider [min]="0" [max]="100" [step]="5" formControlName="soundVolume">
+                    </mat-slider>
+                    <span>{{ notificationsFormGroup.get('soundVolume')?.value }}%</span>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+            
+            <!-- Notification Types -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>Notification Types</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="notification-types-list">
+                  <div *ngFor="let notification of notificationSettings" class="notification-type">
+                    <div class="notification-info">
+                      <mat-checkbox [(ngModel)]="notification.enabled" [ngModelOptions]="{standalone: true}">
+                        {{ notification.title }}
+                      </mat-checkbox>
+                      <p class="notification-description">{{ notification.description }}</p>
+                    </div>
+                    
+                    <div class="notification-actions">
+                      <button mat-icon-button *ngIf="notification.type === 'sound'" 
+                              (click)="testNotificationSound(notification)"
+                              [disabled]="!notification.enabled">
+                        <mat-icon>volume_up</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+  
+        <!-- User Management -->
+        <div *ngIf="activeTab === 'users'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>people</mat-icon>
+            User Management
+          </h2>
+          
+          <div class="settings-grid">
+            <!-- User Settings -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>User Settings</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div formGroupName="users" class="user-settings">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Default User Role</mat-label>
+                    <mat-select formControlName="defaultRole">
+                      <mat-option *ngFor="let role of userRoles" [value]="role.id">
+                        {{ role.name }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  
+                  <mat-slide-toggle formControlName="allowSelfRegistration" color="primary">
+                    Allow Self Registration
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle formControlName="requireEmailVerification" color="primary">
+                    Require Email Verification
+                  </mat-slide-toggle>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Max Login Attempts</mat-label>
+                    <input matInput formControlName="maxLoginAttempts" type="number">
+                    <mat-error *ngIf="usersFormGroup.get('maxLoginAttempts')?.hasError('min')">
+                      Minimum 1 attempt
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+              </mat-card-content>
+            </mat-card>
+            
+            <!-- User Roles -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>User Roles</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="roles-list">
+                  <div *ngFor="let role of userRoles" class="role-item">
+                    <div class="role-header">
+                      <h4>{{ role.name }}</h4>
+                      <mat-chip>{{ role.permissions.length }} permissions</mat-chip>
+                    </div>
+                    <p class="role-description">{{ role.description }}</p>
+                    <div class="role-permissions">
+                      <mat-chip-listbox>
+                        <mat-chip-option *ngFor="let perm of role.permissions.slice(0, 3)">
+                          {{ perm }}
+                        </mat-chip-option>
+                        <mat-chip-option *ngIf="role.permissions.length > 3" disabled>
+                          +{{ role.permissions.length - 3 }} more
+                        </mat-chip-option>
+                      </mat-chip-listbox>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+  
+        <!-- System Settings -->
+        <div *ngIf="activeTab === 'system'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>computer</mat-icon>
+            System Settings
+          </h2>
+          
+          <div class="settings-grid">
+            <!-- System Preferences -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>System Preferences</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div formGroupName="system" class="system-preferences">
+                  <mat-slide-toggle formControlName="autoRefresh" color="primary">
+                    Auto-refresh Data
+                  </mat-slide-toggle>
+                  
+                  <mat-form-field appearance="outline" *ngIf="systemFormGroup.get('autoRefresh')?.value">
+                    <mat-label>Refresh Interval</mat-label>
+                    <input matInput formControlName="refreshInterval" type="number">
+                    <span matSuffix>seconds</span>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Session Timeout</mat-label>
+                    <input matInput formControlName="sessionTimeout" type="number">
+                    <span matSuffix>minutes</span>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Data Retention</mat-label>
+                    <input matInput formControlName="dataRetention" type="number">
+                    <span matSuffix>days</span>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Max Concurrent Requests</mat-label>
+                    <input matInput formControlName="maxConcurrentRequests" type="number">
+                  </mat-form-field>
+                </div>
+              </mat-card-content>
+            </mat-card>
+            
+            <!-- Security Settings -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>Security Settings</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div formGroupName="security" class="security-settings">
+                  <mat-slide-toggle formControlName="twoFactorEnabled" color="primary">
+                    Two-Factor Authentication
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle formControlName="autoLogout" color="primary">
+                    Auto-logout Inactive Users
+                  </mat-slide-toggle>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Password Expiry</mat-label>
+                    <input matInput formControlName="passwordExpiry" type="number">
+                    <span matSuffix>days</span>
+                  </mat-form-field>
+                  
+                  <mat-slide-toggle formControlName="auditLogging" color="primary">
+                    Enable Audit Logging
+                  </mat-slide-toggle>
+                  
+                  <div class="ip-whitelist">
+                    <h4>IP Whitelist</h4>
+                    <div formArrayName="ipWhitelist">
+                      <div *ngFor="let ip of ipWhitelistArray.controls; let i = index" class="ip-entry">
+                        <mat-form-field appearance="outline">
+                          <mat-label>IP Address/CIDR</mat-label>
+                          <input matInput [formControlName]="i" placeholder="e.g., 192.168.1.0/24">
+                          <mat-error *ngIf="ipWhitelistArray.at(i).hasError('pattern')">
+                            Invalid IP address format
+                          </mat-error>
+                        </mat-form-field>
+                        <button mat-icon-button color="warn" (click)="removeIpFromWhitelist(i)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <button mat-button (click)="addIpToWhitelist()">
+                      <mat-icon>add</mat-icon>
+                      Add IP Address
+                    </button>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+  
+        <!-- Backup Settings -->
+        <div *ngIf="activeTab === 'backup'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>backup</mat-icon>
+            Backup & Restore
+          </h2>
+          
+          <div class="settings-grid">
+            <!-- Backup Configuration -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>Backup Configuration</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div formGroupName="backup" class="backup-settings">
+                  <mat-slide-toggle formControlName="autoBackup" color="primary">
+                    Automatic Backups
+                  </mat-slide-toggle>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Backup Location</mat-label>
+                    <mat-select formControlName="backupLocation">
+                      <mat-option value="local">Local Server</mat-option>
+                      <mat-option value="cloud">Cloud Storage</mat-option>
+                      <mat-option value="remote">Remote Server</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  
+                  <mat-slide-toggle formControlName="backupEncryption" color="primary">
+                    Enable Encryption
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle formControlName="backupCompression" color="primary">
+                    Enable Compression
+                  </mat-slide-toggle>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Max Backup Copies</mat-label>
+                    <input matInput formControlName="maxBackupCopies" type="number">
+                  </mat-form-field>
+                  
+                  <div class="backup-actions">
+                    <button mat-raised-button color="primary" (click)="runSystemBackup()" [disabled]="backupInProgress">
+                      <mat-icon>backup</mat-icon>
+                      {{ backupInProgress ? 'Backing Up...' : 'Backup Now' }}
+                    </button>
+                    
+                    <button mat-stroked-button color="warn" (click)="restoreFromBackup()" [disabled]="restoreInProgress">
+                      <mat-icon>restore</mat-icon>
+                      {{ restoreInProgress ? 'Restoring...' : 'Restore Backup' }}
+                    </button>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+            
+            <!-- Backup Schedules -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>Backup Schedules</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="backup-schedules">
+                  <div *ngFor="let schedule of backupSchedules" class="schedule-item">
+                    <div class="schedule-info">
+                      <div class="schedule-header">
+                        <mat-checkbox [(ngModel)]="schedule.enabled" [ngModelOptions]="{standalone: true}">
+                          {{ schedule.name }}
+                        </mat-checkbox>
+                        <mat-chip>{{ schedule.frequency | titlecase }}</mat-chip>
+                      </div>
+                      
+                      <div class="schedule-details">
+                        <div class="detail">
+                          <mat-icon>schedule</mat-icon>
+                          <span>{{ schedule.time }}</span>
+                        </div>
+                        <div class="detail">
+                          <mat-icon>update</mat-icon>
+                          <span *ngIf="schedule.lastBackup">Last: {{ formatDate(schedule.lastBackup) }}</span>
+                          <span *ngIf="!schedule.lastBackup">Never backed up</span>
+                        </div>
+                        <div class="detail">
+                          <mat-icon>timer</mat-icon>
+                          <span *ngIf="schedule.enabled && schedule.nextBackup">
+                            Next: {{ getTimeUntilNextBackup(schedule) }}
+                          </span>
+                          <span *ngIf="!schedule.enabled">Disabled</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="schedule-actions">
+                      <button mat-icon-button (click)="runBackupNow(schedule)" [disabled]="!schedule.enabled || backupInProgress">
+                        <mat-icon>play_arrow</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+  
+        <!-- API Settings -->
+        <div *ngIf="activeTab === 'api'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>api</mat-icon>
+            API Settings
+          </h2>
+          
+          <div class="settings-grid">
+            <!-- API Keys -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>API Keys</mat-card-title>
+                <button mat-stroked-button (click)="createApiKey()">
+                  <mat-icon>add</mat-icon>
+                  Create New Key
+                </button>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="new-api-key">
+                  <mat-form-field appearance="outline">
+                    <mat-label>New API Key Name</mat-label>
+                    <input matInput [(ngModel)]="newApiKeyName" [ngModelOptions]="{standalone: true}" placeholder="Enter key name">
+                  </mat-form-field>
+                </div>
+                
+                <div class="api-keys-list">
+                  <div *ngFor="let apiKey of apiKeys" class="api-key-item">
+                    <div class="api-key-info">
+                      <div class="api-key-header">
+                        <h4>{{ apiKey.name }}</h4>
+                        <mat-chip [color]="getApiKeyStatusColor(apiKey.status)" selected>
+                          <mat-icon>{{ getApiKeyStatusIcon(apiKey.status) }}</mat-icon>
+                          {{ apiKey.status | titlecase }}
+                        </mat-chip>
+                      </div>
+                      
+                      <div class="api-key-details">
+                        <div class="detail">
+                          <mat-icon>vpn_key</mat-icon>
+                          <span class="key-value">{{ apiKey.key }}</span>
+                          <button mat-icon-button (click)="showApiKeyDetails(apiKey)">
+                            <mat-icon>visibility</mat-icon>
+                          </button>
+                        </div>
+                        <div class="detail">
+                          <mat-icon>calendar_today</mat-icon>
+                          <span>Created: {{ formatDate(apiKey.created) }}</span>
+                        </div>
+                        <div class="detail">
+                          <mat-icon>event</mat-icon>
+                          <span [class.expiring]="isApiKeyExpiringSoon(apiKey)">Expires: {{ formatDate(apiKey.expires) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="api-key-actions">
+                      <button mat-icon-button color="warn" (click)="revokeApiKey(apiKey)">
+                        <mat-icon>block</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+            
+            <!-- API Documentation -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>API Documentation</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="api-documentation">
+                  <h4>Available Endpoints</h4>
+                  <div class="endpoint-list">
+                    <div class="endpoint">
+                      <div class="endpoint-method get">GET</div>
+                      <div class="endpoint-path">/api/flights</div>
+                      <div class="endpoint-desc">Retrieve flight data</div>
+                    </div>
+                    <div class="endpoint">
+                      <div class="endpoint-method post">POST</div>
+                      <div class="endpoint-path">/api/flights</div>
+                      <div class="endpoint-desc">Create new flight</div>
+                    </div>
+                    <div class="endpoint">
+                      <div class="endpoint-method get">GET</div>
+                      <div class="endpoint-path">/api/weather</div>
+                      <div class="endpoint-desc">Retrieve weather data</div>
+                    </div>
+                    <div class="endpoint">
+                      <div class="endpoint-method get">GET</div>
+                      <div class="endpoint-path">/api/terminals</div>
+                      <div class="endpoint-desc">Retrieve terminal data</div>
+                    </div>
+                  </div>
+                  
+                  <h4>Authentication</h4>
+                  <p>Include your API key in the request header:</p>
+                  <code>Authorization: Bearer YOUR_API_KEY</code>
+                  
+                  <h4>Rate Limits</h4>
+                  <p>100 requests per minute per API key</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+  
+        <!-- Advanced Settings -->
+        <div *ngIf="activeTab === 'advanced'" class="settings-section">
+          <h2 class="section-title">
+            <mat-icon>tune</mat-icon>
+            Advanced Settings
+          </h2>
+          
+          <div class="settings-grid">
+            <!-- Advanced Options -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>Advanced Options</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="advanced-options">
+                  <mat-slide-toggle [(ngModel)]="advancedSettings.debugMode" [ngModelOptions]="{standalone: true}" color="primary">
+                    Debug Mode
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle [(ngModel)]="advancedSettings.verboseLogging" [ngModelOptions]="{standalone: true}" color="primary">
+                    Verbose Logging
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle [(ngModel)]="advancedSettings.experimentalFeatures" [ngModelOptions]="{standalone: true}" color="primary">
+                    Experimental Features
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle [(ngModel)]="advancedSettings.developerOptions" [ngModelOptions]="{standalone: true}" color="primary">
+                    Developer Options
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle [(ngModel)]="advancedSettings.telemetryEnabled" [ngModelOptions]="{standalone: true}" color="primary">
+                    Telemetry & Analytics
+                  </mat-slide-toggle>
+                  
+                  <mat-slide-toggle [(ngModel)]="advancedSettings.autoUpdate" [ngModelOptions]="{standalone: true}" color="primary">
+                    Auto Update
+                  </mat-slide-toggle>
+                  
+                  <div class="advanced-controls">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Cache Size (MB)</mat-label>
+                      <input matInput [(ngModel)]="advancedSettings.cacheSize" [ngModelOptions]="{standalone: true}" type="number">
+                    </mat-form-field>
+                    
+                    <mat-form-field appearance="outline">
+                      <mat-label>Max Log Size (MB)</mat-label>
+                      <input matInput [(ngModel)]="advancedSettings.maxLogSize" [ngModelOptions]="{standalone: true}" type="number">
+                    </mat-form-field>
+                  </div>
+                  
+                  <div class="advanced-actions">
+                    <button mat-stroked-button color="primary" (click)="clearCache()">
+                      <mat-icon>delete_sweep</mat-icon>
+                      Clear Cache
+                    </button>
+                    
+                    <button mat-stroked-button color="warn" (click)="clearLogs()">
+                      <mat-icon>cleaning_services</mat-icon>
+                      Clear Logs
+                    </button>
+                    
+                    <button mat-stroked-button (click)="generateSystemReport()">
+                      <mat-icon>description</mat-icon>
+                      Generate Report
+                    </button>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+            
+            <!-- System Preferences -->
+            <mat-card class="settings-card">
+              <mat-card-header>
+                <mat-card-title>System Preferences</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="system-preferences-list">
+                  <div *ngFor="let pref of systemPreferences" class="preference-item">
+                    <div class="preference-info">
+                      <div class="preference-name">{{ pref.name }}</div>
+                      <div class="preference-value">
+                        <span *ngIf="pref.type === 'boolean'">
+                          {{ pref.value ? 'Enabled' : 'Disabled' }}
+                        </span>
+                        <span *ngIf="pref.type !== 'boolean'">
+                          {{ pref.value }}{{ pref.unit ? ' ' + pref.unit : '' }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div class="preference-control" *ngIf="pref.type === 'boolean'">
+                      <mat-slide-toggle [(ngModel)]="pref.value" [ngModelOptions]="{standalone: true}" (change)="updateSystemPreference(pref, $event.checked)">
+                      </mat-slide-toggle>
+                    </div>
+                    
+                    <div class="preference-control" *ngIf="pref.type === 'number'">
+                      <mat-slider [min]="pref.min || 0" [max]="pref.max || 100" [step]="pref.step || 1" [(ngModel)]="pref.value" [ngModelOptions]="{standalone: true}" (change)="updateSystemPreference(pref, pref.value)">
+                      </mat-slider>
+                    </div>
+                    
+                    <div class="preference-control" *ngIf="pref.type === 'select' && pref.options">
+                      <mat-select [(ngModel)]="pref.value" [ngModelOptions]="{standalone: true}" (selectionChange)="updateSystemPreference(pref, $event.value)">
+                        <mat-option *ngFor="let option of pref.options" [value]="option">
+                          {{ option }}
+                        </mat-option>
+                      </mat-select>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Footer Actions -->
+    <div class="settings-footer">
+      <button mat-stroked-button color="warn" (click)="resetToDefaults()">
+        <mat-icon>restore</mat-icon>
+        Reset to Defaults
+      </button>
+      
+      <div class="footer-info">
+        <span>System Version: {{ systemInfo.version }}</span>
+        <span>Last Saved: {{ importExportStatus.lastExport ? formatDate(importExportStatus.lastExport) : 'Never' }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- API Key Details Dialog -->
+  <div class="api-key-dialog-overlay" *ngIf="showApiKey && selectedApiKey">
+    <mat-card class="api-key-dialog">
+      <mat-card-header>
+        <mat-card-title>API Key Details</mat-card-title>
+        <button mat-icon-button (click)="showApiKey = false; selectedApiKey = null">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div class="api-key-details-content">
+          <div class="detail-row">
+            <span class="detail-label">Name:</span>
+            <span class="detail-value">{{ selectedApiKey.name }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Key:</span>
+            <span class="detail-value key-value">{{ selectedApiKey.key }}</span>
+            <button mat-icon-button (click)="copyToClipboard(selectedApiKey.key)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value">
+              <mat-chip [color]="getApiKeyStatusColor(selectedApiKey.status)" selected>
+                {{ selectedApiKey.status | titlecase }}
+              </mat-chip>
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Created:</span>
+            <span class="detail-value">{{ formatDate(selectedApiKey.created) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Expires:</span>
+            <span class="detail-value">{{ formatDate(selectedApiKey.expires) }}</span>
+          </div>
+        </div>
+        
+        <div class="api-key-warning" *ngIf="isApiKeyExpiringSoon(selectedApiKey)">
+          <mat-icon color="warn">warning</mat-icon>
+          <span>This API key will expire soon. Consider renewing it.</span>
+        </div>
+      </mat-card-content>
+      
+      <mat-card-actions align="end">
+        <button mat-button (click)="showApiKey = false; selectedApiKey = null">
+          Close
+        </button>
+        <button mat-raised-button color="primary">
+          <mat-icon>refresh</mat-icon>
+          Renew Key
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>

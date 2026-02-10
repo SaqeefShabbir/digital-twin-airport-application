@@ -1,0 +1,410 @@
+<div class="alert-system-container">
+    <!-- Header -->
+    <div class="alert-header">
+      <div class="header-content">
+        <h1>
+          <mat-icon class="header-icon">notifications_active</mat-icon>
+          Airport Alert System
+        </h1>
+        <p class="subtitle">Real-time monitoring and management of airport alerts</p>
+      </div>
+      
+      <div class="header-controls">
+        <button mat-stroked-button (click)="toggleAutoRefresh()" [color]="autoRefresh ? 'primary' : ''">
+          <mat-icon>{{ autoRefresh ? 'pause' : 'play_arrow' }}</mat-icon>
+          {{ autoRefresh ? 'Pause Updates' : 'Resume Updates' }}
+        </button>
+        
+        <button mat-stroked-button (click)="exportAlerts()">
+          <mat-icon>download</mat-icon>
+          Export Alerts
+        </button>
+        
+        <button mat-raised-button color="primary" (click)="toggleSettings()">
+          <mat-icon>settings</mat-icon>
+          Settings
+        </button>
+        
+        <!-- New alerts indicator -->
+        <button mat-icon-button *ngIf="newAlertsCount > 0" (click)="clearNewAlerts()" 
+                matTooltip="{{ newAlertsCount }} new alerts" class="new-alerts-badge">
+          <mat-icon [color]="'warn'">notifications</mat-icon>
+          <span class="badge-count">{{ newAlertsCount }}</span>
+        </button>
+      </div>
+    </div>
+  
+    <!-- Statistics Cards -->
+    <div class="statistics-grid">
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon" [style.background]="'rgba(244, 67, 54, 0.1)'">
+            <mat-icon color="warn">error</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.activeAlerts }}</div>
+            <div class="stat-label">Active Alerts</div>
+          </div>
+        </div>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon" [style.background]="'rgba(255, 152, 0, 0.1)'">
+            <mat-icon color="accent">warning</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.criticalAlerts }}</div>
+            <div class="stat-label">Critical Alerts</div>
+          </div>
+        </div>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon" [style.background]="'rgba(33, 150, 243, 0.1)'">
+            <mat-icon color="primary">check_circle</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.acknowledgedAlerts }}</div>
+            <div class="stat-label">Acknowledged</div>
+          </div>
+        </div>
+      </mat-card>
+      
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon" [style.background]="'rgba(76, 175, 80, 0.1)'">
+            <mat-icon color="primary">schedule</mat-icon>
+          </div>
+          <div class="stat-details">
+            <div class="stat-value">{{ statistics.avgResponseTime }} min</div>
+            <div class="stat-label">Avg Response Time</div>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  
+    <!-- Filters -->
+    <mat-card class="filters-card">
+      <div class="filters-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Alert Type</mat-label>
+          <mat-select [(ngModel)]="filterOptions.type" (selectionChange)="applyFilters()">
+            <mat-option value="all">All Types</mat-option>
+            <mat-option *ngFor="let type of alertTypes" [value]="type.id">
+              {{ type.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+          <mat-label>Severity</mat-label>
+          <mat-select [(ngModel)]="filterOptions.severity" (selectionChange)="applyFilters()">
+            <mat-option value="all">All Severities</mat-option>
+            <mat-option *ngFor="let severity of severityOptions" [value]="severity">
+              {{ severity | titlecase }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="filterOptions.status" (selectionChange)="applyFilters()">
+            <mat-option value="all">All Statuses</mat-option>
+            <mat-option *ngFor="let status of statusOptions" [value]="status">
+              {{ status | titlecase }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+          <mat-label>Time Range</mat-label>
+          <mat-select [(ngModel)]="filterOptions.timeRange" (selectionChange)="applyFilters()">
+            <mat-option *ngFor="let range of timeRanges" [value]="range.value">
+              {{ range.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <button mat-stroked-button (click)="requestNotificationPermission()" 
+                *ngIf="'Notification' in windowRef && windowRef.Notification.permission === 'default'">
+          <mat-icon>notifications</mat-icon>
+          Enable Notifications
+        </button>
+      </div>
+    </mat-card>
+  
+    <!-- Alerts List -->
+    <div class="alerts-section">
+      <div class="section-header">
+        <h2>Active Alerts ({{ filteredAlerts.length }})</h2>
+        <div class="section-actions">
+          <button mat-button (click)="applyFilters()">
+            <mat-icon>refresh</mat-icon>
+            Refresh
+          </button>
+        </div>
+      </div>
+      
+      <div class="alerts-container">
+        <div *ngIf="filteredAlerts.length === 0" class="no-alerts">
+          <mat-icon>check_circle</mat-icon>
+          <h3>No alerts found</h3>
+          <p>All systems are operating normally</p>
+        </div>
+        
+        <mat-card *ngFor="let alert of filteredAlerts" class="alert-card" 
+                  [class.critical]="alert.severity === 'critical'"
+                  [class.high]="alert.severity === 'high'"
+                  [class.medium]="alert.severity === 'medium'"
+                  [class.low]="alert.severity === 'low'">
+          <div class="alert-header">
+            <div class="alert-type">
+              <mat-icon [color]="getSeverityColor(alert.severity)" class="type-icon">
+                {{ getAlertTypeIcon(alert.type) }}
+              </mat-icon>
+              <span class="type-name">{{ getAlertTypeName(alert.type) }}</span>
+            </div>
+            
+            <div class="alert-severity">
+              <mat-chip [color]="getSeverityColor(alert.severity)" selected>
+                <mat-icon>{{ getSeverityIcon(alert.severity) }}</mat-icon>
+                {{ alert.severity | titlecase }}
+              </mat-chip>
+            </div>
+          </div>
+          
+          <mat-card-content>
+            <h3 class="alert-title">{{ alert.title }}</h3>
+            <p class="alert-message">{{ alert.message }}</p>
+            
+            <div class="alert-details">
+              <div class="detail-item">
+                <mat-icon>location_on</mat-icon>
+                <span>{{ alert.location }}</span>
+              </div>
+              <div class="detail-item">
+                <mat-icon>schedule</mat-icon>
+                <span>{{ formatTimeAgo(alert.timestamp) }}</span>
+              </div>
+              <div class="detail-item">
+                <mat-icon>source</mat-icon>
+                <span>{{ alert.source }}</span>
+              </div>
+              <div *ngIf="alert.assignedTo" class="detail-item">
+                <mat-icon>person</mat-icon>
+                <span>{{ alert.assignedTo }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+          
+          <mat-card-actions align="end">
+            <button mat-button *ngIf="alert.status === 'active'" 
+                    (click)="acknowledgeAlert(alert)" color="primary">
+              <mat-icon>check_circle</mat-icon>
+              Acknowledge
+            </button>
+            
+            <button mat-button *ngIf="alert.status === 'acknowledged'" 
+                    (click)="resolveAlert(alert)" color="primary">
+              <mat-icon>done_all</mat-icon>
+              Resolve
+            </button>
+            
+            <button mat-button [matMenuTriggerFor]="alertMenu">
+              <mat-icon>more_vert</mat-icon>
+              More
+            </button>
+            
+            <mat-menu #alertMenu="matMenu">
+              <button mat-menu-item>
+                <mat-icon>share</mat-icon>
+                Share Alert
+              </button>
+              <button mat-menu-item>
+                <mat-icon>history</mat-icon>
+                View History
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item>
+                <mat-icon>content_copy</mat-icon>
+                Copy Details
+              </button>
+            </mat-menu>
+          </mat-card-actions>
+          
+          <!-- Alert status indicator -->
+          <div class="alert-status-indicator" [class]="alert.status">
+            <div class="status-dot"></div>
+            <span class="status-text">{{ alert.status | titlecase }}</span>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  
+    <!-- Settings Panel -->
+    <div class="settings-panel" *ngIf="showSettings">
+      <mat-card class="settings-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>settings</mat-icon>
+            Alert System Settings
+          </mat-card-title>
+          <button mat-icon-button (click)="toggleSettings()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+            
+            <!-- Alert Types Configuration -->
+            <div class="settings-section">
+              <h3>Alert Types Configuration</h3>
+              <div formArrayName="alertTypes">
+                <div *ngFor="let alertType of alertTypesFormArray.controls; let i = index" 
+                     [formGroupName]="i" class="alert-type-setting">
+                  <div class="alert-type-header">
+                    <mat-checkbox formControlName="enabled">
+                      {{ getAlertTypeFormGroup(i).get('name')?.value }}
+                    </mat-checkbox>
+                    <span class="type-description">
+                      {{ alertTypes[i].description }}
+                    </span>
+                  </div>
+                  
+                  <div class="alert-type-options">
+                    <mat-slide-toggle formControlName="soundEnabled" color="primary">
+                      Sound
+                    </mat-slide-toggle>
+                    
+                    <mat-slide-toggle formControlName="popupEnabled" color="primary">
+                      Popup
+                    </mat-slide-toggle>
+                    
+                    <mat-slide-toggle formControlName="emailEnabled" color="primary">
+                      Email
+                    </mat-slide-toggle>
+                    
+                    <mat-slide-toggle formControlName="smsEnabled" color="primary">
+                      SMS
+                    </mat-slide-toggle>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Notification Settings -->
+            <div class="settings-section" formGroupName="notificationSettings">
+              <h3>Notification Settings</h3>
+              <div class="settings-grid">
+                <mat-slide-toggle formControlName="soundEnabled" color="primary">
+                  Enable Sound Notifications
+                </mat-slide-toggle>
+                
+                <mat-slide-toggle formControlName="popupEnabled" color="primary">
+                  Enable Popup Notifications
+                </mat-slide-toggle>
+                
+                <mat-slide-toggle formControlName="emailEnabled" color="primary">
+                  Enable Email Notifications
+                </mat-slide-toggle>
+                
+                <mat-slide-toggle formControlName="smsEnabled" color="primary">
+                  Enable SMS Notifications
+                </mat-slide-toggle>
+                
+                <mat-slide-toggle formControlName="quietHoursEnabled" color="primary">
+                  Enable Quiet Hours
+                </mat-slide-toggle>
+                
+                <div class="quiet-hours" *ngIf="settingsForm.get('notificationSettings.quietHoursEnabled')?.value">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Start Time</mat-label>
+                    <input matInput formControlName="quietHoursStart" type="time">
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>End Time</mat-label>
+                    <input matInput formControlName="quietHoursEnd" type="time">
+                  </mat-form-field>
+                </div>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Max Alerts Per Hour</mat-label>
+                  <input matInput formControlName="maxAlertsPerHour" type="number">
+                  <mat-error *ngIf="settingsForm.get('notificationSettings.maxAlertsPerHour')?.hasError('min')">
+                    Minimum 1 alert per hour
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+            
+            <!-- Escalation Settings -->
+            <div class="settings-section" formGroupName="escalationSettings">
+              <h3>Escalation Settings</h3>
+              <div class="settings-grid">
+                <mat-slide-toggle formControlName="autoEscalate" color="primary">
+                  Auto-escalate Unacknowledged Alerts
+                </mat-slide-toggle>
+                
+                <mat-form-field appearance="outline">
+                  <mat-label>Escalation Time (minutes)</mat-label>
+                  <input matInput formControlName="escalationTime" type="number">
+                </mat-form-field>
+                
+                <mat-slide-toggle formControlName="notifySupervisor" color="primary">
+                  Notify Supervisor
+                </mat-slide-toggle>
+                
+                <mat-form-field appearance="outline" *ngIf="settingsForm.get('escalationSettings.notifySupervisor')?.value">
+                  <mat-label>Supervisor Email</mat-label>
+                  <input matInput formControlName="supervisorEmail" type="email">
+                  <mat-error *ngIf="settingsForm.get('escalationSettings.supervisorEmail')?.hasError('email')">
+                    Please enter a valid email address
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+            
+            <mat-card-actions align="end">
+              <button mat-button type="button" (click)="toggleSettings()">
+                Cancel
+              </button>
+              <button mat-raised-button color="primary" type="submit">
+                Save Settings
+              </button>
+            </mat-card-actions>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  
+    <!-- Alert Legend -->
+    <mat-card class="legend-card">
+      <mat-card-header>
+        <mat-card-title>Alert Severity Legend</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="legend-items">
+          <div class="legend-item critical">
+            <div class="legend-color"></div>
+            <span>Critical - Immediate action required</span>
+          </div>
+          <div class="legend-item high">
+            <div class="legend-color"></div>
+            <span>High - Action required soon</span>
+          </div>
+          <div class="legend-item medium">
+            <div class="legend-color"></div>
+            <span>Medium - Monitor closely</span>
+          </div>
+          <div class="legend-item low">
+            <div class="legend-color"></div>
+            <span>Low - Informational</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>

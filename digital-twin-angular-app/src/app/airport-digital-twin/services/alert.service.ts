@@ -25,6 +25,10 @@ export class AlertService {
     
     return of(false).pipe(delay(200));
   }
+
+  getAlertsStream(): Observable<Alert[]> {
+    return this.alertsSubject.asObservable();
+  }
   
   addAlert(alert: Omit<Alert, 'id' | 'timestamp' | 'acknowledged'>): Observable<Alert> {
     const newAlert: Alert = {
@@ -50,7 +54,14 @@ export class AlertService {
         timestamp: new Date(Date.now() - 15 * 60000),
         location: 'Terminal 3 Security',
         acknowledged: false,
-        priority: 1
+        priority: 1,
+        terminal: '3',
+        estimatedResolutionTime: Date.now() + 30 * 60000,
+        assignedTo: 'Security Team',
+        requiresAcknowledgement: true,
+        category: 'Security',
+        autoEscalate: true,
+        resolved: false
       },
       {
         id: 'ALERT2',
@@ -60,7 +71,14 @@ export class AlertService {
         timestamp: new Date(Date.now() - 30 * 60000),
         location: 'Terminal 2 Baggage Claim',
         acknowledged: false,
-        priority: 2
+        priority: 2,
+        terminal: '2',
+        estimatedResolutionTime: Date.now() + 20 * 60000,
+        assignedTo: 'Baggage Operations',
+        requiresAcknowledgement: true,
+        category: 'Operations',
+        autoEscalate: false,
+        resolved: false
       },
       {
         id: 'ALERT3',
@@ -70,7 +88,14 @@ export class AlertService {
         timestamp: new Date(Date.now() - 45 * 60000),
         location: 'Terminal 1',
         acknowledged: true,
-        priority: 3
+        priority: 3,
+        terminal: '1',
+        estimatedResolutionTime: Date.now(),
+        assignedTo: 'Gate Operations',
+        requiresAcknowledgement: false,
+        category: 'Flight Operations',
+        autoEscalate: false,
+        resolved: true
       }
     ];
   }

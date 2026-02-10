@@ -242,7 +242,7 @@
                     <span class="status-label">{{ status.label }}</span>
                   </div>
                   <div class="status-count">
-                    {{ resources.filter(r => r.status === status.value).length }}
+                    {{ getResourceCountByStatus(status.value) }}
                   </div>
                 </div>
               </div>
@@ -285,7 +285,7 @@
             </div>
             <div class="card-content">
               <div class="allocations-list">
-                <div *ngFor="let allocation of allocations.filter(a => a.status === 'ACTIVE').slice(0, 5)" 
+                <div *ngFor="let allocation of getActiveAllocations(5)" 
                      class="allocation-item">
                   <div class="allocation-info">
                     <div class="resource-id">{{ allocation.resourceId }}</div>
@@ -317,10 +317,10 @@
                   <div class="department-name">{{ dept }}</div>
                   <div class="department-stats">
                     <span class="available-count">
-                      {{ staffResources.filter(s => s.department === dept && s.status === 'AVAILABLE').length }}
+                      {{ getAvailableStaffCountByDeptAndStatus(dept, 'AVAILABLE') }}
                     </span>
                     <span class="total-count">
-                      / {{ staffResources.filter(s => s.department === dept).length }}
+                      / {{ getTotalStaffCountByDeptartment(dept) }}
                     </span>
                   </div>
                 </div>
@@ -444,7 +444,7 @@
                 <tbody>
                   <tr *ngFor="let allocation of allocations">
                     <td class="resource-cell">
-                      {{ resources.find(r => r.id === allocation.resourceId)?.name || allocation.resourceId }}
+                      {{ getResourceName(allocation.resourceId) }}
                     </td>
                     <td>
                       <span *ngIf="allocation.flightNumber" class="flight-number">{{ allocation.flightNumber }}</span>
