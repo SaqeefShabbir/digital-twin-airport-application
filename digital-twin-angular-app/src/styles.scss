@@ -3,11 +3,11 @@
 
 @include mat.core();
 
-$airport-primary: mat.define-palette(mat.$blue-palette, 700);
-$airport-accent: mat.define-palette(mat.$orange-palette, A200, A100, A400);
-$airport-warn: mat.define-palette(mat.$red-palette);
+$airport-primary: mat.m2-define-palette(mat.$m2-blue-palette, 700);
+$airport-accent: mat.m2-define-palette(mat.$m2-orange-palette, A200, A100, A400);
+$airport-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
-$airport-theme: mat.define-dark-theme((
+$airport-theme: mat.m2-define-dark-theme((
   color: (
     primary: $airport-primary,
     accent: $airport-accent,

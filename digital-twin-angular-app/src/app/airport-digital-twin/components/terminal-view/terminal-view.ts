@@ -20,7 +20,7 @@ import { GateAssignmentDialog } from '../gate-assignment-dialog/gate-assignment-
 export class TerminalView implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('terminalCanvas') terminalCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('scrollContainer') scrollContainer!: ElementRef;
-  
+
   // Data
   terminals: TerminalStatus[] = [];
   gates: GateStatus[] = [];

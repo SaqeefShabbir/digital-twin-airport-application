@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit, HostListener } from '@angular/core';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer';
+import { OrbitControls } from 'three-stdlib';
+import { GLTFLoader } from 'three-stdlib';
+import { CSS2DRenderer, CSS2DObject } from 'three-stdlib';
 import gsap from 'gsap';
 
 // Airport structure interfaces
@@ -683,7 +683,13 @@ export class ThreeDVisualization implements OnInit, AfterViewInit, OnDestroy {
     });
     
     this.renderer.dispose();
-    this.labelRenderer.dispose();
+    // To this:
+    // this.labelRenderer.dispose(); // CSS2DRenderer doesn't have dispose method
+
+    // And add:
+    if (this.labelRenderer && this.labelRenderer.domElement) {
+      this.labelRenderer.domElement.remove();
+    }
   }
   
   // UI Methods

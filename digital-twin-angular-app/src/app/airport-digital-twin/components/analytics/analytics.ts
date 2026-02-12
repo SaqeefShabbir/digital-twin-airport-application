@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, registerables } from 'chart.js';
 import { FormsModule } from '@angular/forms';
@@ -39,7 +39,7 @@ export interface WeatherData {
   standalone: false,
   styleUrls: ['./analytics.scss'],
 })
-export class Analytics implements OnInit, OnDestroy {
+export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   // Time period options
   timePeriods = ['Real-time', 'Today', 'Week', 'Month', 'Quarter'];
   selectedPeriod = 'Today';
@@ -114,8 +114,13 @@ export class Analytics implements OnInit, OnDestroy {
   }
   
   ngOnInit(): void {
-    this.initializeCharts();
-    this.startRealTimeUpdates();
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.initializeCharts();
+      this.startRealTimeUpdates();
+    }, 500);
   }
   
   ngOnDestroy(): void {

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription, interval } from 'rxjs';
 import { FlightService } from '../../services/flight.service';
 import { Flight, FlightStatus, OperationType, FlightFilter } from '../../models/flight.interface';
-import { AirportService } from '../../services/airport.service';
+import { AirportService, Terminal } from '../../services/airport.service';
 
 @Component({
   selector: 'app-flight-operations',
@@ -20,6 +20,8 @@ export class FlightOperations implements OnInit, OnDestroy {
   @Output() flightSelected = new EventEmitter<Flight>();
   @Output() operationFiltered = new EventEmitter<any>();
   @ViewChild('operationsContainer') operationsContainer!: ElementRef;
+
+  currentDate: Date = new Date();
 
   // Flight data
   flights: Flight[] = [];
@@ -49,7 +51,7 @@ export class FlightOperations implements OnInit, OnDestroy {
   selectedFlight: Flight | null = null;
   
   // Terminal information
-  terminals: string[] = ['T1', 'T2', 'T3', 'T4', 'T5'];
+  terminals: Terminal[] = [];
   
   // Time periods for filtering
   timePeriods = [

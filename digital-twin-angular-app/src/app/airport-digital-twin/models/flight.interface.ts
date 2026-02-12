@@ -52,7 +52,7 @@ export interface Flight {
   id: string;
   flightNumber: string;
   airline: string;
-  airlineCode: string;
+  airlineCode?: string;
   airlineLogo?: string;
   
   // Operation Details
@@ -99,17 +99,22 @@ export interface Flight {
   crewCount?: number;
   
   // Operational Metadata
-  priority: FlightPriority;
+  priority?: FlightPriority;
   remarks?: string;
-  isCodeShare: boolean;
+  isCodeShare?: boolean;
   codeShareFlightNumbers?: string[];
-  isInternational: boolean;
+  isInternational?: boolean;
   
   // Technical Information
   fuelStatus?: number; // percentage
   maintenanceStatus?: 'OK' | 'MINOR' | 'MAJOR';
   lastMaintenance?: Date | string;
-  
+
+  checkInCounters?: string[];
+  boardingGate?: string;
+  baggageClaimArea?: string;
+  runway?: string;
+
   // Timestamps
   createdAt: Date | string;
   updatedAt: Date | string;

@@ -93,7 +93,7 @@ export class TerminalDetailDialog implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    public dialogRef: MatDialogRef<TerminalDetailDialogComponent>,
+    public dialogRef: MatDialogRef<TerminalDetailDialog>,
     @Inject(MAT_DIALOG_DATA) public data: TerminalDetailDialogData
   ) {
     this.editMode = data.editMode || false;

@@ -1,20 +1,179 @@
 {
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "ng serve",
-      "type": "chrome",
+      "name": "Launch Angular with Edge",
+      "type": "msedge",
       "request": "launch",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "webpack:/*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*",
+        "/./~/*": "${webRoot}/node_modules/*"
+      },
+      "trace": true,
+      "smartStep": true,
+      "skipFiles": [
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/zone.js",
+        "**/node_modules/**"
+      ],
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--disable-web-security",
+        "--user-data-dir=${workspaceFolder}/.vscode/edge-profile"
+      ],
+      "userDataDir": "${workspaceFolder}/.vscode/edge-profile",
+      "pathMapping": {
+        "/": "${workspaceFolder}",
+        "/dist": "${workspaceFolder}/dist"
+      },
       "preLaunchTask": "npm: start",
-      "url": "http://localhost:4200/"
+      "postDebugTask": "terminate-npm-start",
+      "internalConsoleOptions": "openOnSessionStart"
     },
     {
-      "name": "ng test",
-      "type": "chrome",
+      "name": "Attach to Edge",
+      "type": "msedge",
+      "request": "attach",
+      "port": 9222,
+      "url": "http://localhost:4200/*",
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "webpack:/*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*",
+        "/./~/*": "${webRoot}/node_modules/*"
+      },
+      "skipFiles": [
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/zone.js",
+        "**/node_modules/**"
+      ],
+      "trace": true,
+      "smartStep": true
+    },
+    {
+      "name": "Launch Angular with Edge (No Cache)",
+      "type": "msedge",
       "request": "launch",
-      "preLaunchTask": "npm: test",
-      "url": "http://localhost:9876/debug.html"
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}",
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--disable-http-cache",
+        "--incognito",
+        "--disable-web-security",
+        "--user-data-dir=${workspaceFolder}/.vscode/edge-profile-nocache"
+      ],
+      "userDataDir": "${workspaceFolder}/.vscode/edge-profile-nocache",
+      "sourceMapPathOverrides": {
+        "webpack:/*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*"
+      },
+      "skipFiles": [
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/zone.js",
+        "**/node_modules/**"
+      ],
+      "preLaunchTask": "npm: start",
+      "postDebugTask": "terminate-npm-start"
+    },
+    {
+      "name": "Launch Angular with Edge (Specific Route)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:4200/flight-operations",
+      "webRoot": "${workspaceFolder}",
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}/.vscode/edge-profile-route"
+      ],
+      "userDataDir": "${workspaceFolder}/.vscode/edge-profile-route",
+      "sourceMapPathOverrides": {
+        "webpack:/*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*"
+      },
+      "skipFiles": [
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/zone.js",
+        "**/node_modules/**"
+      ],
+      "preLaunchTask": "npm: start",
+      "postDebugTask": "terminate-npm-start"
+    },
+    {
+      "name": "Edge (Attach to Existing Angular)",
+      "type": "msedge",
+      "request": "attach",
+      "port": 9222,
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "webpack:/*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*",
+        "/./~/*": "${webRoot}/node_modules/*"
+      },
+      "skipFiles": [
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/zone.js",
+        "**/node_modules/**"
+      ],
+      "trace": true
+    },
+    {
+      "name": "Launch Edge with Angular Production Build",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}",
+      "runtimeArgs": [
+        "--remote-debugging-port=9222",
+        "--user-data-dir=${workspaceFolder}/.vscode/edge-profile-prod"
+      ],
+      "userDataDir": "${workspaceFolder}/.vscode/edge-profile-prod",
+      "sourceMapPathOverrides": {
+        "webpack:/*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*"
+      },
+      "skipFiles": [
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/zone.js",
+        "**/node_modules/**"
+      ],
+      "preLaunchTask": "npm: build",
+      "postDebugTask": "terminate-npm-build"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Angular Full Stack Debug",
+      "configurations": ["Launch Angular with Edge", "Attach to Node Backend"],
+      "stopAll": true
     }
   ]
 }

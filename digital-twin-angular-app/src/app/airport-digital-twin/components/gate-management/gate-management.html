@@ -104,13 +104,13 @@
         <div class="quick-filters">
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Search Gates</mat-label>
-            <input matInput [formControl]="filterForm.get('search')" placeholder="Gate, flight, terminal...">
+            <input matInput [formControl]="getFilterFormControls(filterForm, 'search')" placeholder="Gate, flight, terminal...">
             <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
   
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Status</mat-label>
-            <mat-select [formControl]="filterForm.get('status')">
+            <mat-select [formControl]="getFilterFormControls(filterForm, 'status')">
               <mat-option *ngFor="let status of statusFilterOptions" [value]="status.value">
                 <div class="status-option" [style.color]="status.color">
                   <mat-icon>{{ getStatusIcon(status.value) }}</mat-icon>
@@ -122,7 +122,7 @@
   
           <mat-form-field appearance="outline" class="filter-field">
             <mat-label>Terminal</mat-label>
-            <mat-select [formControl]="filterForm.get('terminal')">
+            <mat-select [formControl]="getFilterFormControls(filterForm, 'terminal')">
               <mat-option *ngFor="let terminal of terminalFilterOptions" [value]="terminal.value">
                 {{ terminal.label }}
               </mat-option>

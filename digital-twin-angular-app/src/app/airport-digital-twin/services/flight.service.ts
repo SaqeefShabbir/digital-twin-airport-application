@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, BehaviorSubject, throwError, timer } from 'rxjs';
 import { catchError, map, tap, delay, switchMap } from 'rxjs/operators';
-import { Flight, FlightStatus, OperationType, FlightFilter } from '../models/flight.interface';
+import { Flight, FlightStatus, OperationType, FlightFilter, AircraftType } from '../models/flight.interface';
 
 export interface RealTimeFlightData {
   flight: Flight;
@@ -170,12 +170,14 @@ export class FlightService {
         gate: Math.random() > 0.2 ? this.gates[Math.floor(Math.random() * this.gates.length)] : undefined,
         terminal: Math.random() > 0.1 ? this.terminals[Math.floor(Math.random() * this.terminals.length)] : undefined,
         baggageClaim: operationType === 'ARRIVAL' ? `BC${Math.floor(Math.random() * 10) + 1}` : undefined,
-        aircraftType: this.aircraftTypes[Math.floor(Math.random() * this.aircraftTypes.length)],
+        aircraftType: this.aircraftTypes[Math.floor(Math.random() * this.aircraftTypes.length)] as AircraftType,
         estimatedTime: this.generateEstimatedTime(status, scheduledTime),
         delayMinutes: status === 'DELAYED' ? Math.floor(Math.random() * 120) + 15 : 0,
         checkInCounters: operationType === 'DEPARTURE' ? 
           [`C${Math.floor(Math.random() * 30) + 1}`, `C${Math.floor(Math.random() * 30) + 1}`] : undefined,
-        remarks: this.generateRemarks(status)
+        remarks: this.generateRemarks(status),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       
       this.mockFlights.push(flight);

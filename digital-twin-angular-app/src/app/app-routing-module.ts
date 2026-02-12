@@ -1,11 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { AirportDashboardComponent } from './airport-digital-twin/components/airport-dashboard/airport-dashboard.component';
+import { AirportDashboard } from './airport-digital-twin/components/airport-dashboard/airport-dashboard';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: AirportDashboardComponent },
+  { path: 'dashboard', component: AirportDashboard },
   { path: '**', redirectTo: '/dashboard' }
 ];
 

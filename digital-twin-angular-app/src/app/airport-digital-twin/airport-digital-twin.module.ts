@@ -25,6 +25,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import { AirportDashboard } from './components/airport-dashboard/airport-dashboard';
 import { TerminalView } from './components/terminal-view/terminal-view';
@@ -43,29 +44,9 @@ import { ThreeDVisualization } from './components/three-d-visualization/three-d-
 import { AlertSystem } from './components/alert-system/alert-system';
 import { ControlPanel } from './components/control-panel/control-panel';
 import { Settings } from './components/settings/settings';
-// import { GateManagementComponent } from './components/gate-management/gate-management.component';
-// import { FlightOperationsComponent } from './components/flight-operations/flight-operations.component';
-// import { PassengerFlowComponent } from './components/passenger-flow/passenger-flow.component';
-// import { ResourceManagementComponent } from './components/resource-management/resource-management.component';
-// import { WeatherIntegrationComponent } from './components/weather-integration/weather-integration.component';
-// import { AnalyticsComponent } from './components/analytics/analytics.component';
-// import { ThreeDVisualizationComponent } from './components/three-d-visualization/three-d-visualization.component';
-// import { AlertSystemComponent } from './components/alert-system/alert-system.component';
-// import { ControlPanelComponent } from './components/control-panel/control-panel.component';
-// import { SettingsComponent } from './components/settings/settings.component';
 
 @NgModule({
   declarations: [
-    // GateManagementComponent,
-    // FlightOperationsComponent,
-    // PassengerFlowComponent,
-    // ResourceManagementComponent,
-    // WeatherIntegrationComponent,
-    // AnalyticsComponent,
-    // ThreeDVisualizationComponent,
-    // AlertSystemComponent,
-    // ControlPanelComponent,
-    // SettingsComponent,
     AirportDashboard,
     TerminalView,
     AlertDialog,
@@ -111,7 +92,8 @@ import { Settings } from './components/settings/settings';
     MatChipsModule,
     MatSlideToggleModule,
     MatSliderModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatCheckboxModule,
   ],
   exports: [
     AirportDashboard

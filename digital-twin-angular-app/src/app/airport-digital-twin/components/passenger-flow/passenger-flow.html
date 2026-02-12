@@ -259,32 +259,33 @@
             <h3>
               <mat-icon class="alert-icon">warning</mat-icon>
               Active Alerts
-              <span class="alert-count">{{ flowData.alerts.length }}</span>
+              <span class="alert-count">{{ flowData?.alerts?.length }}</span>
             </h3>
           </div>
           <div class="card-content">
             <div class="alerts-list">
-              <div *ngFor="let alert of flowData.alerts" 
-                   class="alert-item"
-                   [class]="getAlertSeverityClass(alert.severity)"
-                   *ngIf="!alert.resolved">
-                <div class="alert-content">
-                  <div class="alert-header">
-                    <span class="alert-type">{{ getAlertTypeDisplay(alert.type) }}</span>
-                    <span class="alert-severity">{{ alert.severity }}</span>
+              <ng-container *ngFor="let alert of flowData?.alerts">
+                <div class="alert-item"
+                     [class]="getAlertSeverityClass(alert.severity)"
+                     *ngIf="!alert.resolved">
+                  <div class="alert-content">
+                    <div class="alert-header">
+                      <span class="alert-type">{{ getAlertTypeDisplay(alert.type) }}</span>
+                      <span class="alert-severity">{{ alert.severity }}</span>
+                    </div>
+                    <div class="alert-message">{{ alert.message }}</div>
+                    <div class="alert-details">
+                      <span class="alert-area">{{ getAreaDisplayName(alert.area) }}</span>
+                      <span class="alert-time">{{ alert.timestamp | date:'shortTime' }}</span>
+                    </div>
                   </div>
-                  <div class="alert-message">{{ alert.message }}</div>
-                  <div class="alert-details">
-                    <span class="alert-area">{{ getAreaDisplayName(alert.area) }}</span>
-                    <span class="alert-time">{{ alert.timestamp | date:'shortTime' }}</span>
+                  <div class="alert-actions">
+                    <button mat-icon-button (click)="acknowledgeAlert(alert.id)" matTooltip="Acknowledge Alert">
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
                   </div>
                 </div>
-                <div class="alert-actions">
-                  <button mat-icon-button (click)="acknowledgeAlert(alert.id)" matTooltip="Acknowledge Alert">
-                    <mat-icon>check_circle</mat-icon>
-                  </button>
-                </div>
-              </div>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -302,25 +303,25 @@
       
       <div class="terminal-detail-content">
         <div class="terminal-metrics">
-          <div *ngIf="terminalFlows.find(t => t.terminal === selectedTerminalDetail)" class="metrics-grid">
+          <div *ngIf="getTerminalFlowDetail()" class="metrics-grid">
             <div class="metric-card">
               <div class="metric-header">
                 <mat-icon>check_in</mat-icon>
                 Check-in
               </div>
               <div class="metric-value">
-                {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.queues }} queues
+                {{ getTerminalFlowDetail()?.checkIn?.queues }} queues
               </div>
               <div class="metric-subvalue">
-                Avg wait: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.averageWait }} min
+                Avg wait: {{ getTerminalFlowDetail()?.checkIn?.averageWait }} min
               </div>
               <div class="metric-progress">
                 <div class="progress-bar">
                   <div class="progress-fill" 
-                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.utilization"></div>
+                       [style.width.%]="getTerminalFlowDetail()?.checkIn?.utilization"></div>
                 </div>
                 <span class="progress-text">
-                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.checkIn.utilization | number:'1.0-0' }}%
+                  {{ getTerminalFlowDetail()?.checkIn?.utilization | number:'1.0-0' }}%
                 </span>
               </div>
             </div>
@@ -331,18 +332,18 @@
                 Security
               </div>
               <div class="metric-value">
-                {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.queues }} checkpoints
+                {{ getTerminalFlowDetail()?.security?.queues }} checkpoints
               </div>
               <div class="metric-subvalue">
-                Avg wait: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.averageWait }} min
+                Avg wait: {{ getTerminalFlowDetail()?.security?.averageWait }} min
               </div>
               <div class="metric-progress">
                 <div class="progress-bar">
                   <div class="progress-fill" 
-                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.utilization"></div>
+                       [style.width.%]="getTerminalFlowDetail()?.security?.utilization"></div>
                 </div>
                 <span class="progress-text">
-                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.security.utilization | number:'1.0-0' }}%
+                  {{ getTerminalFlowDetail()?.security?.utilization | number:'1.0-0' }}%
                 </span>
               </div>
             </div>
@@ -353,18 +354,18 @@
                 Immigration
               </div>
               <div class="metric-value">
-                {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.queues }} counters
+                {{ getTerminalFlowDetail()?.immigration?.queues }} counters
               </div>
               <div class="metric-subvalue">
-                Avg wait: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.averageWait }} min
+                Avg wait: {{ getTerminalFlowDetail()?.immigration?.averageWait }} min
               </div>
               <div class="metric-progress">
                 <div class="progress-bar">
                   <div class="progress-fill" 
-                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.utilization"></div>
+                       [style.width.%]="getTerminalFlowDetail()?.immigration?.utilization"></div>
                 </div>
                 <span class="progress-text">
-                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.immigration.utilization | number:'1.0-0' }}%
+                  {{ getTerminalFlowDetail()?.immigration?.utilization | number:'1.0-0' }}%
                 </span>
               </div>
             </div>
@@ -375,7 +376,7 @@
                 Baggage Claim
               </div>
               <div class="metric-value">
-                Wait time: {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.baggage.waitTime }} min
+                Wait time: {{ getTerminalFlowDetail()?.baggage?.waitTime }} min
               </div>
               <div class="metric-subvalue">
                 Belt utilization
@@ -383,10 +384,10 @@
               <div class="metric-progress">
                 <div class="progress-bar">
                   <div class="progress-fill" 
-                       [style.width.%]="terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.baggage.utilization"></div>
+                       [style.width.%]="getTerminalFlowDetail()?.baggage?.utilization"></div>
                 </div>
                 <span class="progress-text">
-                  {{ terminalFlows.find(t => t.terminal === selectedTerminalDetail)?.baggage.utilization | number:'1.0-0' }}%
+                  {{ getTerminalFlowDetail()?.baggage?.utilization | number:'1.0-0' }}%
                 </span>
               </div>
             </div>
@@ -412,43 +413,43 @@
       
       <div class="area-analytics-content">
         <div class="area-stats">
-          <div *ngIf="flowData?.byArea.find(a => a.area === selectedAreaDetail)" class="stats-grid">
+          <div *ngIf="getFlowDataForArea(selectedAreaDetail)" class="stats-grid">
             <div class="stat-box">
               <div class="stat-label">Current Passengers</div>
               <div class="stat-value">
-                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.passengerCount | number }}
+                {{ getFlowDataForArea(selectedAreaDetail)?.passengerCount | number }}
               </div>
             </div>
             
             <div class="stat-box">
               <div class="stat-label">Capacity</div>
               <div class="stat-value">
-                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.capacity | number }}
+                {{ getFlowDataForArea(selectedAreaDetail)?.capacity | number }}
               </div>
             </div>
             
             <div class="stat-box">
               <div class="stat-label">Queue Length</div>
               <div class="stat-value">
-                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.queueLength | number }}
+                {{ getFlowDataForArea(selectedAreaDetail)?.queueLength | number }}
               </div>
             </div>
             
             <div class="stat-box">
               <div class="stat-label">Avg Wait Time</div>
               <div class="stat-value wait-time" 
-                   [class]="getWaitTimeClass(flowData?.byArea.find(a => a.area === selectedAreaDetail)?.averageWaitTime || 0)">
-                {{ flowData?.byArea.find(a => a.area === selectedAreaDetail)?.averageWaitTime }} min
+                   [class]="getWaitTimeClass(getFlowDataForArea(selectedAreaDetail)?.averageWaitTime || 0)">
+                {{ getFlowDataForArea(selectedAreaDetail)?.averageWaitTime }} min
               </div>
             </div>
             
             <div class="stat-box">
               <div class="stat-label">Utilization</div>
               <div class="stat-value utilization" 
-                   [class]="getUtilizationClass((flowData?.byArea.find(a => a.area === selectedAreaDetail)?.passengerCount || 0) / 
-                                                (flowData?.byArea.find(a => a.area === selectedAreaDetail)?.capacity || 1) * 100)">
-                {{ ((flowData?.byArea.find(a => a.area === selectedAreaDetail)?.passengerCount || 0) / 
-                    (flowData?.byArea.find(a => a.area === selectedAreaDetail)?.capacity || 1) * 100) | number:'1.0-0' }}%
+                   [class]="getUtilizationClass((getFlowDataForArea(selectedAreaDetail)?.passengerCount || 0) / 
+                                                (getFlowDataForArea(selectedAreaDetail)?.capacity || 1) * 100)">
+                {{ ((getFlowDataForArea(selectedAreaDetail)?.passengerCount || 0) / 
+                    (getFlowDataForArea(selectedAreaDetail)?.capacity || 1) * 100) | number:'1.0-0' }}%
               </div>
             </div>
           </div>

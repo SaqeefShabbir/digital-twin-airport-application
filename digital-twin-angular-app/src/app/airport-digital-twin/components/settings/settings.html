@@ -30,7 +30,7 @@
   
     <!-- Settings Navigation -->
     <div class="settings-navigation">
-      <nav mat-tab-nav-bar>
+      <nav mat-tab-nav-bar [tabPanel]="tabPanel">
         <a mat-tab-link 
            *ngFor="let tab of ['general', 'notifications', 'users', 'system', 'backup', 'api', 'advanced']" 
            [active]="activeTab === tab" 
@@ -39,6 +39,12 @@
           {{ getTabLabel(tab) }}
         </a>
       </nav>
+
+      <!-- Tab Panel - REQUIRED -->
+      <mat-tab-nav-panel #tabPanel class="settings-tab-panel">
+        <!-- Router outlet for tab content -->
+        <router-outlet></router-outlet>
+      </mat-tab-nav-panel>
     </div>
   
     <!-- Settings Content -->
@@ -54,7 +60,7 @@
           
           <mat-card class="settings-card">
             <mat-card-content>
-              <div class="settings-grid">
+              <div class="settings-grid" formGroupName="general">
                 <!-- Airport Information -->
                 <div class="setting-group">
                   <h3>Airport Information</h3>
@@ -209,8 +215,8 @@
                   
                   <div class="volume-control">
                     <label>Sound Volume</label>
-                    <mat-slider [min]="0" [max]="100" [step]="5" formControlName="soundVolume">
-                    </mat-slider>
+                    <!-- <mat-slider [min]="0" [max]="100" [step]="5" formControlName="soundVolume">
+                    </mat-slider> -->
                     <span>{{ notificationsFormGroup.get('soundVolume')?.value }}%</span>
                   </div>
                 </div>
@@ -725,8 +731,8 @@
                     </div>
                     
                     <div class="preference-control" *ngIf="pref.type === 'number'">
-                      <mat-slider [min]="pref.min || 0" [max]="pref.max || 100" [step]="pref.step || 1" [(ngModel)]="pref.value" [ngModelOptions]="{standalone: true}" (change)="updateSystemPreference(pref, pref.value)">
-                      </mat-slider>
+                      <!-- <mat-slider [min]="pref.min || 0" [max]="pref.max || 100" [step]="pref.step || 1" [(ngModel)]="pref.value" [ngModelOptions]="{standalone: true}" (change)="updateSystemPreference(pref, pref.value)">
+                      </mat-slider> -->
                     </div>
                     
                     <div class="preference-control" *ngIf="pref.type === 'select' && pref.options">

@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource } from '@angular/material/table';
@@ -160,7 +160,7 @@ export class GateManagement implements OnInit, AfterViewInit, OnDestroy {
       // Search filter
       if (filters.search) {
         const searchStr = filters.search.toLowerCase();
-        matches = matches && (
+        matches = matches && !(
           gate.gateNumber.toLowerCase().includes(searchStr) ||
           gate.terminal.toLowerCase().includes(searchStr) ||
           (gate.currentFlight && gate.currentFlight.toLowerCase().includes(searchStr)) ||
@@ -187,7 +187,7 @@ export class GateManagement implements OnInit, AfterViewInit, OnDestroy {
       if (filters.flightNumber) {
         const flightMatch = (gate.currentFlight && gate.currentFlight.toLowerCase().includes(filters.flightNumber.toLowerCase())) ||
                           (gate.nextFlight && gate.nextFlight.toLowerCase().includes(filters.flightNumber.toLowerCase()));
-        matches = matches && flightMatch;
+        matches = matches && !flightMatch;
       }
 
       return matches;
@@ -201,6 +201,10 @@ export class GateManagement implements OnInit, AfterViewInit, OnDestroy {
     if (this.dataSource.paginator) {
       this.dataSource.paginator.firstPage();
     }
+  }
+
+  getFilterFormControls(filter: AbstractControl, field: string): FormControl {
+    return (filter as FormGroup).get(field) as FormControl;
   }
 
   clearFilters(): void {

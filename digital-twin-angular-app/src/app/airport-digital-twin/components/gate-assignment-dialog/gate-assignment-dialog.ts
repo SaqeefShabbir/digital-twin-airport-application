@@ -15,11 +15,14 @@ export interface GateAssignment {
   flightId?: string;
   flightNumber?: string;
   gateStatus: string;
+  flightStatus?: string;
   airline?: string;
   destination?: string;
   scheduledTime?: Date;
   estimatedTime?: Date;
   status?: string;
+  nextFlightNumber?: string;
+  nextFlightTime?: Date;
   assignToNext?: boolean;
   maintenanceReason?: string;
   maintenanceDuration?: number; // in minutes
@@ -81,7 +84,7 @@ export class GateAssignmentDialog implements OnInit {
     private fb: FormBuilder,
     private airportDataService: AirportDataService,
     private snackBar: MatSnackBar,
-    public dialogRef: MatDialogRef<GateAssignmentDialogComponent>,
+    public dialogRef: MatDialogRef<GateAssignmentDialog>,
     @Inject(MAT_DIALOG_DATA) public data: GateAssignmentDialogData
   ) {
     this.assignmentForm = this.fb.group({

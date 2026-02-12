@@ -274,7 +274,15 @@ export class PassengerFlow implements OnInit, OnDestroy, AfterViewInit {
     // Update heatmap data
     this.updateHeatmapData();
   }
-  
+
+  getTerminalFlowDetail(): TerminalFlow | undefined {
+    return this.terminalFlows.find(t => t.terminal === this.selectedTerminalDetail);
+  }
+
+  getFlowDataForArea(area: string): any {
+    return this.flowData?.byArea.find(a => a.area === area);
+  }
+
   private generateMockTerminalFlows(): TerminalFlow[] {
     return this.terminals.map(terminal => ({
       terminal,

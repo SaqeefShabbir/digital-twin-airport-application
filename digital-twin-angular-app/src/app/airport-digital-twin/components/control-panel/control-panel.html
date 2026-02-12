@@ -153,14 +153,14 @@
                 <!-- Value Type Command -->
                 <div *ngIf="command.type === 'value'" class="command-control">
                   <div class="value-control">
-                    <mat-slider 
+                    <!-- <mat-slider 
                         [(ngModel)]="command.currentValue"
                         [min]="command.minValue" 
                         [max]="command.maxValue" 
                         [step]="command.step"
                         [disabled]="command.status === 'executing'"
                         (change)="executeCommand(command, command.currentValue)">
-                    </mat-slider>
+                    </mat-slider> -->
                     <div class="value-display">
                       <span class="value">{{ command.currentValue }}</span>
                       <span class="unit" *ngIf="command.unit">{{ command.unit }}</span>
