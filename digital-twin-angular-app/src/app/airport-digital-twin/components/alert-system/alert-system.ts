@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, FormControl, Validators } from '@angular/forms';
 
 // Alert interfaces
@@ -44,6 +44,9 @@ export interface AlertStatistics {
   styleUrls: ['./alert-system.scss']
 })
 export class AlertSystem implements OnInit, OnDestroy {
+  // Audio element reference
+  @ViewChild('notificationSound') notificationSoundRef!: ElementRef<HTMLAudioElement>;
+  
   // Alert data
   alerts: Alert[] = [];
   filteredAlerts: Alert[] = [];
@@ -98,7 +101,6 @@ export class AlertSystem implements OnInit, OnDestroy {
 
   // Real-time simulation
   private alertInterval: any;
-  private soundNotification: HTMLAudioElement;
   
   // UI State
   showSettings = false;
@@ -106,12 +108,12 @@ export class AlertSystem implements OnInit, OnDestroy {
   autoRefresh = true;
   newAlertsCount = 0;
 
+  // Web Audio API context
+  private audioContext: AudioContext | null = null;
+  private audioInitialized = false;
+
   constructor(private fb: FormBuilder) {
     this.settingsForm = this.createSettingsForm();
-    this.soundNotification = new Audio('assets/sounds/notification.mp3');
-    
-    // Fallback notification sound (beep)
-    this.soundNotification.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
   }
 
   ngOnInit(): void {
@@ -119,11 +121,18 @@ export class AlertSystem implements OnInit, OnDestroy {
     this.applyFilters();
     this.startRealTimeAlerts();
     this.updateStatistics();
+    this.requestNotificationPermission();
+    
+    // Initialize audio context on user interaction
+    this.initAudioOnUserInteraction();
   }
 
   ngOnDestroy(): void {
     if (this.alertInterval) {
       clearInterval(this.alertInterval);
+    }
+    if (this.audioContext) {
+      this.audioContext.close();
     }
   }
 
@@ -142,7 +151,7 @@ export class AlertSystem implements OnInit, OnDestroy {
       }),
       escalationSettings: this.fb.group({
         autoEscalate: [true],
-        escalationTime: [5, [Validators.min(1), Validators.max(60)]], // minutes
+        escalationTime: [5, [Validators.min(1), Validators.max(60)]],
         notifySupervisor: [true],
         supervisorEmail: ['', Validators.email]
       })
@@ -159,7 +168,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         type: 'security',
         severity: 'critical',
         status: 'active',
-        timestamp: new Date(Date.now() - 15 * 60000), // 15 minutes ago
+        timestamp: new Date(Date.now() - 15 * 60000),
         location: 'Terminal A - Security Checkpoint',
         source: 'Security System',
         assignedTo: 'Security Team A',
@@ -172,7 +181,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         type: 'weather',
         severity: 'high',
         status: 'acknowledged',
-        timestamp: new Date(Date.now() - 45 * 60000), // 45 minutes ago
+        timestamp: new Date(Date.now() - 45 * 60000),
         location: 'Entire Airport',
         source: 'Weather Service',
         assignedTo: 'Operations Center',
@@ -185,7 +194,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         type: 'flight',
         severity: 'medium',
         status: 'active',
-        timestamp: new Date(Date.now() - 30 * 60000), // 30 minutes ago
+        timestamp: new Date(Date.now() - 30 * 60000),
         location: 'Gate A12',
         source: 'Flight Operations',
         assignedTo: 'Gate Agents'
@@ -197,7 +206,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         type: 'baggage',
         severity: 'high',
         status: 'active',
-        timestamp: new Date(Date.now() - 60 * 60000), // 1 hour ago
+        timestamp: new Date(Date.now() - 60 * 60000),
         location: 'Terminal B - Baggage Claim',
         source: 'Baggage System',
         assignedTo: 'Maintenance Team',
@@ -210,7 +219,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         type: 'system',
         severity: 'low',
         status: 'acknowledged',
-        timestamp: new Date(Date.now() - 120 * 60000), // 2 hours ago
+        timestamp: new Date(Date.now() - 120 * 60000),
         location: 'All Terminals',
         source: 'IT Department',
         assignedTo: 'IT Support'
@@ -222,7 +231,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         type: 'maintenance',
         severity: 'info',
         status: 'resolved',
-        timestamp: new Date(Date.now() - 180 * 60000), // 3 hours ago
+        timestamp: new Date(Date.now() - 180 * 60000),
         location: 'Runway 09L/27R',
         source: 'Airfield Operations',
         assignedTo: 'Airfield Maintenance',
@@ -256,25 +265,143 @@ export class AlertSystem implements OnInit, OnDestroy {
     return this.alertTypesFormArray.at(index) as FormGroup;
   }
 
+  // Initialize audio on user interaction
+  private initAudioOnUserInteraction(): void {
+    const initAudio = () => {
+      if (!this.audioInitialized) {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        this.audioInitialized = true;
+      }
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+
+    document.addEventListener('click', initAudio);
+    document.addEventListener('keydown', initAudio);
+  }
+
+  // Play notification sound using Web Audio API
+  private playNotificationSound(): void {
+    if (!this.isSoundEnabled) return;
+
+    try {
+      // Create audio context if not initialized
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+
+      // Resume audio context if suspended
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+
+      // Create oscillator for beep sound
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, this.audioContext.currentTime); // A5 note
+      
+      gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(this.audioContext.currentTime + 0.2);
+
+      // Play second beep for critical alerts
+      setTimeout(() => {
+        if (this.audioContext) {
+          const oscillator2 = this.audioContext.createOscillator();
+          const gainNode2 = this.audioContext.createGain();
+
+          oscillator2.type = 'sine';
+          oscillator2.frequency.setValueAtTime(880, this.audioContext.currentTime);
+          
+          gainNode2.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gainNode2.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
+
+          oscillator2.connect(gainNode2);
+          gainNode2.connect(this.audioContext.destination);
+
+          oscillator2.start();
+          oscillator2.stop(this.audioContext.currentTime + 0.15);
+        }
+      }, 300);
+
+    } catch (error) {
+      console.log('Web Audio API error:', error);
+      // Fallback to simple beep using Web Audio if available
+      this.fallbackBeep();
+    }
+  }
+
+  // Fallback beep using standard Web Audio
+  private fallbackBeep(): void {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.2);
+      
+      setTimeout(() => audioCtx.close(), 500);
+    } catch (e) {
+      console.log('Fallback beep also failed:', e);
+    }
+  }
+
+  // Show browser notification
+  private showNotification(alert: Alert): void {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(`Airport Alert: ${alert.title}`, {
+          body: alert.message,
+          icon: 'assets/icons/alert-icon.png',
+          tag: alert.id,
+          requireInteraction: true,
+          silent: !this.isSoundEnabled
+        });
+      } catch (error) {
+        console.log('Notification error:', error);
+      }
+    }
+  }
+
+  // Request notification permission
+  requestNotificationPermission(): void {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('Notification permission:', permission);
+      });
+    }
+  }
+
   // Apply filters to alerts
   applyFilters(): void {
     this.filteredAlerts = this.alerts.filter(alert => {
-      // Filter by type
       if (this.filterOptions.type !== 'all' && alert.type !== this.filterOptions.type) {
         return false;
       }
       
-      // Filter by severity
       if (this.filterOptions.severity !== 'all' && alert.severity !== this.filterOptions.severity) {
         return false;
       }
       
-      // Filter by status
       if (this.filterOptions.status !== 'all' && alert.status !== this.filterOptions.status) {
         return false;
       }
       
-      // Filter by time range
       const now = new Date();
       const alertTime = alert.timestamp;
       
@@ -290,7 +417,7 @@ export class AlertSystem implements OnInit, OnDestroy {
         default:
           return true;
       }
-    }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Sort by newest first
+    }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
   // Update statistics
@@ -323,14 +450,14 @@ export class AlertSystem implements OnInit, OnDestroy {
     if (this.autoRefresh) {
       this.alertInterval = setInterval(() => {
         this.simulateNewAlert();
-      }, 30000); // Every 30 seconds
+      }, 45000); // Every 45 seconds
     }
   }
 
   // Simulate a new alert
   private simulateNewAlert(): void {
-    const alertTypes = ['security', 'weather', 'flight', 'system', 'maintenance'];
-    const severities = ['critical', 'high', 'medium', 'low'];
+    const alertTypes = ['security', 'weather', 'flight', 'system', 'maintenance'] as const;
+    const severities = ['critical', 'high', 'medium', 'low'] as const;
     const locations = ['Terminal A', 'Terminal B', 'Terminal C', 'Runway 09L', 'Baggage Claim', 'Security Checkpoint'];
     const sources = ['Automated System', 'Manual Report', 'Sensor Network', 'Weather Service'];
     
@@ -343,66 +470,68 @@ export class AlertSystem implements OnInit, OnDestroy {
       id: (this.alerts.length + 1).toString(),
       title: `${this.getAlertTypeName(randomType)} Alert - ${randomLocation}`,
       message: `Automated alert generated for ${randomLocation}. Please review and take appropriate action.`,
-      type: randomType as any,
-      severity: randomSeverity as any,
+      type: randomType,
+      severity: randomSeverity,
       status: 'active',
       timestamp: new Date(),
       location: randomLocation,
       source: randomSource
     };
     
-    this.alerts.unshift(newAlert); // Add to beginning
+    this.alerts.unshift(newAlert);
     this.applyFilters();
     this.updateStatistics();
     this.newAlertsCount++;
     
-    // Play sound if enabled
-    if (this.isSoundEnabled) {
+    // Check quiet hours
+    if (this.isQuietHours()) {
+      console.log('Quiet hours active, sound suppressed');
+      return;
+    }
+    
+    // Play sound if enabled for this alert type
+    const alertTypeConfig = this.alertTypes.find(at => at.id === randomType);
+    if (alertTypeConfig?.soundEnabled && this.isSoundEnabled) {
       this.playNotificationSound();
     }
     
-    // Show notification if enabled
-    if (this.settingsForm.get('notificationSettings.popupEnabled')?.value) {
+    // Show notification if enabled for this alert type
+    if (alertTypeConfig?.popupEnabled && 
+        this.settingsForm.get('notificationSettings.popupEnabled')?.value) {
       this.showNotification(newAlert);
     }
+  }
+
+  // Check if current time is within quiet hours
+  private isQuietHours(): boolean {
+    const quietHoursEnabled = this.settingsForm.get('notificationSettings.quietHoursEnabled')?.value;
+    if (!quietHoursEnabled) return false;
+
+    const now = new Date();
+    const start = this.settingsForm.get('notificationSettings.quietHoursStart')?.value;
+    const end = this.settingsForm.get('notificationSettings.quietHoursEnd')?.value;
+
+    if (!start || !end) return false;
+
+    const [startHour, startMin] = start.split(':').map(Number);
+    const [endHour, endMin] = end.split(':').map(Number);
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const startMinutes = startHour * 60 + startMin;
+    let endMinutes = endHour * 60 + endMin;
+
+    // Handle overnight quiet hours
+    if (endMinutes < startMinutes) {
+      endMinutes += 24 * 60;
+    }
+
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   }
 
   // Get alert type name from ID
   getAlertTypeName(typeId: string): string {
     const alertType = this.alertTypes.find(at => at.id === typeId);
     return alertType ? alertType.name : typeId;
-  }
-
-  // Play notification sound
-  private playNotificationSound(): void {
-    try {
-      this.soundNotification.currentTime = 0;
-      this.soundNotification.play().catch(e => console.log('Sound play failed:', e));
-    } catch (error) {
-      console.log('Sound notification error:', error);
-    }
-  }
-
-  // Show browser notification
-  private showNotification(alert: Alert): void {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`Airport Alert: ${alert.title}`, {
-        body: alert.message,
-        icon: 'assets/icons/airport-icon.png',
-        tag: alert.id
-      });
-    }
-  }
-
-  // Request notification permission
-  requestNotificationPermission(): void {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          console.log('Notification permission granted');
-        }
-      });
-    }
   }
 
   // Acknowledge alert
@@ -495,18 +624,12 @@ export class AlertSystem implements OnInit, OnDestroy {
   // Save settings
   saveSettings(): void {
     if (this.settingsForm.valid) {
-      // Update alert types configuration
       const formValues = this.settingsForm.value;
       formValues.alertTypes.forEach((updatedType: any, index: number) => {
         this.alertTypes[index] = { ...this.alertTypes[index], ...updatedType };
       });
       
-      // Update sound enabled
       this.isSoundEnabled = formValues.notificationSettings.soundEnabled;
-      
-      // Update auto-refresh based on settings
-      this.autoRefresh = true; // Always auto-refresh for demo
-      
       this.showSettings = false;
       console.log('Settings saved:', formValues);
     }
@@ -538,5 +661,10 @@ export class AlertSystem implements OnInit, OnDestroy {
     } else if (this.alertInterval) {
       clearInterval(this.alertInterval);
     }
+  }
+
+  // Test sound
+  testSound(): void {
+    this.playNotificationSound();
   }
 }

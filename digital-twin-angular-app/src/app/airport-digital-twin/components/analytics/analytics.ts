@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
-import { FormsModule } from '@angular/forms';
+
+// Register Chart.js components
+Chart.register(...registerables);
 
 // Analytics data interfaces
 export interface AirportMetric {
@@ -10,13 +11,6 @@ export interface AirportMetric {
   change: number;
   unit: string;
   trend: 'up' | 'down' | 'stable';
-}
-
-export interface FlightData {
-  time: string;
-  arrivals: number;
-  departures: number;
-  delays: number;
 }
 
 export interface PassengerFlow {
@@ -33,13 +27,25 @@ export interface WeatherData {
   visibility: number;
 }
 
+export interface Alert {
+  id: number;
+  type: 'warning' | 'info' | 'success';
+  message: string;
+  time: string;
+}
+
 @Component({
   selector: 'app-analytics',
   templateUrl: './analytics.html',
   standalone: false,
-  styleUrls: ['./analytics.scss'],
+  styleUrls: ['./analytics.scss']
 })
 export class Analytics implements OnInit, AfterViewInit, OnDestroy {
+  // ViewChild references for canvas elements
+  @ViewChild('flightChartCanvas') flightChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('passengerChartCanvas') passengerChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('resourceChartCanvas') resourceChartCanvas!: ElementRef<HTMLCanvasElement>;
+  
   // Time period options
   timePeriods = ['Real-time', 'Today', 'Week', 'Month', 'Quarter'];
   selectedPeriod = 'Today';
@@ -85,12 +91,17 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   };
   
   // Charts references
-  private flightChart: any;
-  private passengerChart: any;
-  private resourceChart: any;
+  private flightChart: Chart | null = null;
+  private passengerChart: Chart | null = null;
+  private resourceChart: Chart | null = null;
+  
+  // Chart initialization flags
+  private chartsInitialized = false;
+  private retryCount = 0;
+  private maxRetries = 5;
   
   // Alert notifications
-  alerts = [
+  alerts: Alert[] = [
     { id: 1, type: 'warning', message: 'Security queue at Terminal B exceeding 15 minutes', time: '10:25' },
     { id: 2, type: 'info', message: 'Baggage system maintenance scheduled for 02:00-04:00', time: '09:45' },
     { id: 3, type: 'success', message: 'All flights currently operating on schedule', time: '08:30' }
@@ -109,14 +120,12 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   // Math reference for template
   Math = Math;
   
-  constructor() {
-    Chart.register(...registerables);
-  }
+  constructor() {}
   
-  ngOnInit(): void {
-  }
-
+  ngOnInit(): void {}
+  
   ngAfterViewInit(): void {
+    // Wait for view to stabilize, then initialize charts
     setTimeout(() => {
       this.initializeCharts();
       this.startRealTimeUpdates();
@@ -124,18 +133,13 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   }
   
   ngOnDestroy(): void {
+    // Clear interval
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
     }
-    if (this.flightChart) {
-      this.flightChart.destroy();
-    }
-    if (this.passengerChart) {
-      this.passengerChart.destroy();
-    }
-    if (this.resourceChart) {
-      this.resourceChart.destroy();
-    }
+    
+    // Destroy charts
+    this.destroyCharts();
   }
   
   // Helper methods for template calculations
@@ -170,9 +174,75 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
     return Math.abs(this.getSecurityTrend());
   }
   
+  private areCanvasesAvailable(): boolean {
+    return !!(
+      this.flightChartCanvas?.nativeElement &&
+      this.passengerChartCanvas?.nativeElement &&
+      this.resourceChartCanvas?.nativeElement
+    );
+  }
+  
+  private setCanvasDimensions(canvas: HTMLCanvasElement): void {
+    const container = canvas.parentElement;
+    if (container) {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight || 300;
+    } else {
+      canvas.width = 400;
+      canvas.height = 300;
+    }
+  }
+  
   initializeCharts(): void {
-    // Flight Operations Chart
-    this.flightChart = new Chart('flightChart', {
+    // Check if canvases are available
+    if (!this.areCanvasesAvailable()) {
+      console.warn('Canvas elements not available, retrying...');
+      
+      if (this.retryCount < this.maxRetries) {
+        this.retryCount++;
+        setTimeout(() => this.initializeCharts(), 300 * this.retryCount);
+      }
+      return;
+    }
+    
+    this.retryCount = 0;
+    
+    try {
+      // Destroy existing charts
+      this.destroyCharts();
+      
+      // Initialize each chart
+      this.initFlightChart();
+      this.initPassengerChart();
+      this.initResourceChart();
+      
+      this.chartsInitialized = true;
+      console.log('Charts initialized successfully');
+      
+    } catch (error) {
+      console.error('Error initializing charts:', error);
+      
+      // Retry on error
+      if (this.retryCount < this.maxRetries) {
+        this.retryCount++;
+        setTimeout(() => this.initializeCharts(), 500 * this.retryCount);
+      }
+    }
+  }
+  
+  private initFlightChart(): void {
+    const canvas = this.flightChartCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Could not get 2D context for flight chart');
+    }
+    
+    // Set canvas dimensions
+    this.setCanvasDimensions(canvas);
+    
+    // Create chart
+    this.flightChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: this.flightOperations.labels,
@@ -183,7 +253,13 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
             borderColor: '#4CAF50',
             backgroundColor: 'rgba(76, 175, 80, 0.1)',
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#4CAF50',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#4CAF50'
           },
           {
             label: 'Departures',
@@ -191,7 +267,13 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
             borderColor: '#2196F3',
             backgroundColor: 'rgba(33, 150, 243, 0.1)',
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#2196F3',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#2196F3'
           },
           {
             label: 'Delays',
@@ -199,7 +281,13 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
             borderColor: '#FF9800',
             backgroundColor: 'rgba(255, 152, 0, 0.1)',
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#FF9800',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#FF9800'
           }
         ]
       },
@@ -208,7 +296,87 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'top',
+            display: false
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+            },
+            ticks: {
+              stepSize: 10
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+  
+  private initPassengerChart(): void {
+    const canvas = this.passengerChartCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Could not get 2D context for passenger chart');
+    }
+    
+    // Set canvas dimensions
+    this.setCanvasDimensions(canvas);
+    
+    // Create chart
+    this.passengerChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: this.passengerFlow.map(p => p.terminal),
+        datasets: [
+          {
+            label: 'Current Passengers',
+            data: this.passengerFlow.map(p => p.current),
+            backgroundColor: 'rgba(33, 150, 243, 0.7)',
+            borderColor: '#2196F3',
+            borderWidth: 1,
+            borderRadius: 6,
+            barPercentage: 0.6,
+            categoryPercentage: 0.8
+          },
+          {
+            label: 'Capacity',
+            data: this.passengerFlow.map(p => p.capacity),
+            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            borderColor: '#FF6384',
+            borderWidth: 2,
+            type: 'line',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#FF6384',
+            pointBorderColor: '#fff'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
           },
           tooltip: {
             mode: 'index',
@@ -218,61 +386,38 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Number of Flights'
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+            },
+            ticks: {
+              callback: function(value) {
+                return value.toLocaleString();
+              }
             }
-          }
-        }
-      }
-    });
-    
-    // Passenger Flow Chart
-    this.passengerChart = new Chart('passengerChart', {
-      type: 'bar',
-      data: {
-        labels: this.passengerFlow.map(p => p.terminal),
-        datasets: [
-          {
-            label: 'Current Passengers',
-            data: this.passengerFlow.map(p => p.current),
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
           },
-          {
-            label: 'Capacity',
-            data: this.passengerFlow.map(p => p.capacity),
-            backgroundColor: 'rgba(255, 99, 132, 0.3)',
-            borderColor: 'rgba(255, 99, 132, 1)',
-            borderWidth: 1,
-            type: 'line',
-            fill: false
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Number of Passengers'
+          x: {
+            grid: {
+              display: false
             }
           }
         }
       }
     });
+  }
+  
+  private initResourceChart(): void {
+    const canvas = this.resourceChartCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
     
-    // Resource Utilization Chart
-    this.resourceChart = new Chart('resourceChart', {
+    if (!ctx) {
+      throw new Error('Could not get 2D context for resource chart');
+    }
+    
+    // Set canvas dimensions
+    this.setCanvasDimensions(canvas);
+    
+    // Create chart
+    this.resourceChart = new Chart(ctx, {
       type: 'radar',
       data: {
         labels: this.resourceUtilization.labels,
@@ -280,70 +425,183 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
           label: 'Utilization %',
           data: this.resourceUtilization.utilization,
           backgroundColor: 'rgba(255, 159, 64, 0.2)',
-          borderColor: 'rgba(255, 159, 64, 1)',
-          pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+          borderColor: '#FF9800',
+          pointBackgroundColor: '#FF9800',
           pointBorderColor: '#fff',
           pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(255, 159, 64, 1)'
+          pointHoverBorderColor: '#FF9800',
+          borderWidth: 2
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
         scales: {
           r: {
             angleLines: {
-              display: true
+              display: true,
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
             },
             suggestedMin: 0,
-            suggestedMax: 100
+            suggestedMax: 100,
+            beginAtZero: true,
+            ticks: {
+              stepSize: 20,
+              callback: function(value) {
+                return value + '%';
+              }
+            }
           }
         }
       }
     });
   }
   
+  private destroyCharts(): void {
+    if (this.flightChart) {
+      this.flightChart.destroy();
+      this.flightChart = null;
+    }
+    if (this.passengerChart) {
+      this.passengerChart.destroy();
+      this.passengerChart = null;
+    }
+    if (this.resourceChart) {
+      this.resourceChart.destroy();
+      this.resourceChart = null;
+    }
+  }
+  
   startRealTimeUpdates(): void {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
+    
     this.updateInterval = setInterval(() => {
-      if (this.selectedPeriod === 'Real-time') {
+      if (this.selectedPeriod === 'Real-time' && this.chartsInitialized) {
         this.updateRealTimeData();
       }
-    }, 5000); // Update every 5 seconds
+    }, 5000);
   }
   
   updateRealTimeData(): void {
-    // Simulate real-time data updates
-    this.airportMetrics.forEach(metric => {
-      const change = Math.random() * 2 - 1; // Random change between -1 and 1
-      metric.value = parseFloat((metric.value + change).toFixed(1));
-    });
+    try {
+      // Simulate real-time data updates
+      this.airportMetrics.forEach(metric => {
+        const change = (Math.random() * 2 - 1) * 0.5;
+        metric.value = parseFloat((metric.value + change).toFixed(1));
+      });
+      
+      // Update flight operations data
+      const lastIndex = this.flightOperations.arrivals.length - 1;
+      this.flightOperations.arrivals[lastIndex] = Math.max(0, 
+        this.flightOperations.arrivals[lastIndex] + Math.floor(Math.random() * 3) - 1
+      );
+      this.flightOperations.departures[lastIndex] = Math.max(0,
+        this.flightOperations.departures[lastIndex] + Math.floor(Math.random() * 3) - 1
+      );
+      this.flightOperations.delays[lastIndex] = Math.max(0,
+        this.flightOperations.delays[lastIndex] + Math.floor(Math.random() * 2)
+      );
+      
+      // Update passenger flow
+      this.passengerFlow.forEach(terminal => {
+        const change = (Math.random() * 200 - 100);
+        terminal.current = Math.max(0, Math.min(terminal.capacity, terminal.current + change));
+      });
+      
+      // Update resource utilization
+      this.resourceUtilization.utilization = this.resourceUtilization.utilization.map(val => 
+        Math.min(100, Math.max(0, val + (Math.random() * 4 - 2)))
+      );
+      
+      // Update charts
+      this.updateCharts();
+      
+    } catch (error) {
+      console.error('Error updating real-time data:', error);
+    }
+  }
+  
+  updateCharts(): void {
+    if (this.flightChart) {
+      this.flightChart.data.datasets[0].data = this.flightOperations.arrivals;
+      this.flightChart.data.datasets[1].data = this.flightOperations.departures;
+      this.flightChart.data.datasets[2].data = this.flightOperations.delays;
+      this.flightChart.update();
+    }
     
-    // Update flight operations data
-    const lastIndex = this.flightOperations.arrivals.length - 1;
-    this.flightOperations.arrivals[lastIndex] += Math.floor(Math.random() * 3) - 1;
-    this.flightOperations.departures[lastIndex] += Math.floor(Math.random() * 3) - 1;
-    this.flightOperations.delays[lastIndex] += Math.floor(Math.random() * 2) - 0;
+    if (this.passengerChart) {
+      this.passengerChart.data.datasets[0].data = this.passengerFlow.map(p => p.current);
+      this.passengerChart.data.datasets[1].data = this.passengerFlow.map(p => p.capacity);
+      this.passengerChart.update();
+    }
     
-    // Update charts
-    this.flightChart.update();
-    this.passengerChart.update();
-    this.resourceChart.update();
+    if (this.resourceChart) {
+      this.resourceChart.data.datasets[0].data = this.resourceUtilization.utilization;
+      this.resourceChart.update();
+    }
   }
   
   onTimePeriodChange(period: string): void {
     this.selectedPeriod = period;
-    // In a real application, you would fetch new data based on the selected period
+    
+    // Simulate data change based on period
+    if (period === 'Today') {
+      this.flightOperations.arrivals = [12, 8, 25, 32, 28, 18];
+      this.flightOperations.departures = [10, 6, 28, 30, 26, 15];
+      this.flightOperations.delays = [2, 1, 4, 3, 5, 2];
+    } else if (period === 'Week') {
+      this.flightOperations.arrivals = [84, 56, 175, 224, 196, 126];
+      this.flightOperations.departures = [70, 42, 196, 210, 182, 105];
+      this.flightOperations.delays = [14, 7, 28, 21, 35, 14];
+    } else if (period === 'Month') {
+      this.flightOperations.arrivals = [360, 240, 750, 960, 840, 540];
+      this.flightOperations.departures = [300, 180, 840, 900, 780, 450];
+      this.flightOperations.delays = [60, 30, 120, 90, 150, 60];
+    }
+    
+    this.updateCharts();
     console.log(`Time period changed to: ${period}`);
   }
   
   onFilterChange(): void {
-    // Handle filter changes
     console.log('Filters updated:', this.filterOptions);
   }
   
   exportData(): void {
-    // Implement data export functionality
     console.log('Exporting analytics data...');
+    
+    // Prepare data for export
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      period: this.selectedPeriod,
+      metrics: this.airportMetrics,
+      flightOperations: this.flightOperations,
+      passengerFlow: this.passengerFlow,
+      resourceUtilization: this.resourceUtilization
+    };
+    
+    // Create JSON file and download
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `airport-analytics-${new Date().getTime()}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    console.log('Export completed');
   }
   
   getWeatherIcon(condition: string): string {
@@ -367,10 +625,17 @@ export class Analytics implements OnInit, AfterViewInit, OnDestroy {
   
   getTrendColor(trend: 'up' | 'down' | 'stable'): string {
     switch(trend) {
-      case 'up': return 'success';
-      case 'down': return 'error';
-      case 'stable': return 'warning';
+      case 'up': return 'primary';
+      case 'down': return 'warn';
+      case 'stable': return 'accent';
       default: return '';
     }
+  }
+  
+  refreshCharts(): void {
+    this.destroyCharts();
+    setTimeout(() => {
+      this.initializeCharts();
+    }, 100);
   }
 }
